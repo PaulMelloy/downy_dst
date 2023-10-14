@@ -176,22 +176,6 @@ server <- function(input, output) {
    })
    output$txtlatentPs <- renderText({
       #get number of zoospore infections with no infection symptom estimation
-      # for(i in unique(Ddates$cohort)){
-      #    if(i == 1) zoo_inf <- 0
-      #    zoo_inf <-
-      #        z_inf <- nrow(Ddates[cohort == i &
-      #                                primary_infection_stage == "zoo_infection_ind" &
-      #                                is.na(hour) == FALSE])
-      #    if(z_inf > 0){
-      #       z_inf <- z_inf *
-      #          nrow(Ddates[cohort == i &
-      #                      primary_infection_stage == "INC_h_lower" &
-      #                      is.na(hour)])
-      #    }else{
-      #       z_inf <- 0
-      #    }
-      #    zoo_inf <- zoo_inf + z_inf
-      # }
       infected_cohorts <- Ddates[primary_infection_stage == "zoo_infection_ind" &
                                     is.na(hour)==FALSE,cohort]
       cohorts_in_latent <-
