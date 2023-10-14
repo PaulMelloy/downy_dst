@@ -88,7 +88,8 @@ ui <- fluidPage(
 # Define server logic required to draw a histogram
 server <- function(input, output) {
 
-   # create a vector of sporangia survival lenghts to determine likelihood
+   # create a vector of sporangia survival lengths to determine likelihood
+   # this could be made faster by casting wide and then calculating
    for (i in unique(Ddates$cohort)) {
       if (i == 1)
          spo_survival <- vector(mode = "numeric")
@@ -99,6 +100,15 @@ server <- function(input, output) {
                                            primary_infection_stage == "spo_germination_hour", hour],
                                  units = "hours"))
    }
+   # What are the surviving cohort numbers
+   surviving_cohorts <-
+      Ddates[primary_infection_stage == "spo_death_hour" &
+                is.na(hour),cohort]
+   # Get the germination times of the cohorts
+   surviving_co_time <-
+      Ddates[primary_infection_stage == "spo_germination_hour " &
+                surviving_cohorts %in% cohort,hour]
+
 
    output$img_leaf <- renderImage({
       list(src = "www/grapeleaf_DM_infected.jpg",
@@ -171,8 +181,7 @@ server <- function(input, output) {
    })
    output$txtSporangReady <- renderText({
       paste("Current surviving Sporangia cohorts:",
-            length(Ddates[primary_infection_stage == "spo_death_hour" &
-                             is.na(hour),hour]))
+            length(surviving_cohorts))
    })
    output$txtlatentPs <- renderText({
       #get number of zoospore infections with no infection symptom estimation
