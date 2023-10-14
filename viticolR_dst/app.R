@@ -1,7 +1,6 @@
 # This is the non-live version, delete when copying
-# cp -r "/homevol/pmelloy/R/downy_dst/viticolR_dst/"
-#       "/homevol/pmelloy/shiny-server/viticolR_dst/"
-
+ # cp -r "/homevol/pmelloy/R/downy_dst/viticolR_dst/"
+ #       "/homevol/pmelloy/shiny-server/viticolR_dst/"
 
 if("/usr/lib/R/site-library" %in% .libPaths()){
    .libPaths("/homevol/pmelloy/R/x86_64-pc-linux-gnu-library/4.3")}
@@ -43,14 +42,16 @@ ui <- fluidPage(
                  in grapevine' authored by Vittorio Rossi, Tito Caffi,
                  Simona Giosue and Riccardo Bugiani. This paper was first published
                  in Ecological Modelling in **2008**.")
-               ),
+      ),
       tabPanel("Seasonal progress",
                h2("Seasonal progress of residual oospores germinating"),
-               h3("North Tamborine mountain"),
+               h3(paste("North Tamborine mountain, last updated:",
+                        as.POSIXct(data.table::last(DMod$time_hours),tz = "Australia/Brisbane"))),
                plotOutput("HT_Plot")),
       tabPanel("Primary disepersals",
                h2("Primary zoospore dispersals from oospore sporangia"),
-               h3("North Tamborine mountain"),
+               h3(paste("North Tamborine mountain, last updated:",
+                        as.POSIXct(data.table::last(DMod$time_hours),tz = "Australia/Brisbane"))),
                verticalLayout(
                   ccs_style(1),
                   code(textOutput(outputId ="txtOosporeGerm" )),
@@ -74,44 +75,29 @@ ui <- fluidPage(
                  present as oilspots between INC_h_lower and INC_h_upper."),
                  p(""),
                  tableOutput("PI_table")) # end of verticalLayout
-               ), # end of tabpanel
+      ), # end of tabpanel
       tabPanel("Forecast risk",
                numericInput("forecast_rain","Forecast rain days in the next week",
                             min = 0, max = 7,value = 1),
                code(textOutput(outputId ="txtRisk")),
 
-               )
       )
-
-
-    # Sidebar with a slider input for number of bins
-    # sidebarLayout(
-    #     sidebarPanel(
-    #         sliderInput("bins",
-    #                     "Number of bins:",
-    #                     min = 1,
-    #                     max = 50,
-    #                     value = 30)
-    #     ),
-    #
-    #     # Show a plot of the generated distribution
-    #     mainPanel("text")
-    # )
+   )
 )
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
 
-   # create a vector of sporangia survival lengths to determine likelihood
-   for(i in unique(Ddates$cohort)){
-      if(i == 1) spo_survival <- vector(mode = "numeric")
+   # create a vector of sporangia survival lenghts to determine likelihood
+   for (i in unique(Ddates$cohort)) {
+      if (i == 1)
+         spo_survival <- vector(mode = "numeric")
       spo_survival <- c(spo_survival,
                         difftime(Ddates[cohort == i &
-                                           primary_infection_stage == "spo_death_hour",hour],
+                                           primary_infection_stage == "spo_death_hour", hour],
                                  Ddates[cohort == i &
                                            primary_infection_stage == "spo_germination_hour", hour],
-                                 units = "hours")
-      )
+                                 units = "hours"))
    }
 
    output$img_leaf <- renderImage({
@@ -122,10 +108,10 @@ server <- function(input, output) {
    # output$w_table <- renderDataTable(NT_weather)
    output$PI_table <-
       renderTable(Ddates[(primary_infection_stage == "zoo_dispersal_ind" |
-                               primary_infection_stage == "zoo_infection_ind") &
-                               is.na(hour) == FALSE,list(cohort,
-                                                         primary_infection_stage,
-                                                         Time = as.character(hour))])
+                             primary_infection_stage == "zoo_infection_ind") &
+                            is.na(hour) == FALSE,list(cohort,
+                                                      primary_infection_stage,
+                                                      Time = as.character(hour))])
 
    # render plot of hydrothermal time
    output$HT_Plot <- renderPlot({
@@ -150,11 +136,11 @@ server <- function(input, output) {
            col = "blue",
            srt = 270)
 
-    })
+   })
 
    output$PI_plot <- renderPlot({
       Ddates[primary_infection_stage != "spo_death_hour" &
-              is.na(hour) == FALSE] |>
+                is.na(hour) == FALSE] |>
          ggplot(aes(x = hour,
                     y = primary_infection_stage,
                     group = factor(cohort)))+
@@ -190,30 +176,35 @@ server <- function(input, output) {
    })
    output$txtlatentPs <- renderText({
       #get number of zoospore infections with no infection symptom estimation
-      for(i in unique(Ddates$cohort)){
-         if(i == 1) zoo_inf <- 0
-         zoo_inf <-
-             z_inf <- nrow(Ddates[cohort == i &
-                                     primary_infection_stage == "zoo_infection_ind" &
-                                     is.na(hour) == FALSE])
-         if(z_inf > 0){
-            z_inf <- z_inf *
-               nrow(Ddates[cohort == i &
-                           primary_infection_stage == "INC_h_lower" &
-                           is.na(hour)])
-         }else{
-            z_inf <- 0
-         }
-         zoo_inf <- zoo_inf + z_inf
-      }
+      # for(i in unique(Ddates$cohort)){
+      #    if(i == 1) zoo_inf <- 0
+      #    zoo_inf <-
+      #        z_inf <- nrow(Ddates[cohort == i &
+      #                                primary_infection_stage == "zoo_infection_ind" &
+      #                                is.na(hour) == FALSE])
+      #    if(z_inf > 0){
+      #       z_inf <- z_inf *
+      #          nrow(Ddates[cohort == i &
+      #                      primary_infection_stage == "INC_h_lower" &
+      #                      is.na(hour)])
+      #    }else{
+      #       z_inf <- 0
+      #    }
+      #    zoo_inf <- zoo_inf + z_inf
+      # }
+      infected_cohorts <- Ddates[primary_infection_stage == "zoo_infection_ind" &
+                                    is.na(hour)==FALSE,cohort]
+      cohorts_in_latent <-
+         Ddates[infected_cohorts %in% cohort &
+                   (primary_infection_stage == "INC_h_upper" |
+                       primary_infection_stage == "INC_h_lower")&
+                   hour > last(DMod$time_hours),unique(cohort)]
 
-      paste("Infections in latent period:",zoo_inf)
+      paste("Infections in latent period:",length(cohorts_in_latent))
    })
-
-
    output$txtRisk <- renderText({
       Sprgia <- length(Ddates[primary_infection_stage == "spo_death_hour" &
-                       is.na(hour),hour])
+                                 is.na(hour),hour])
       risk_val <- Sprgia * input$forecast_rain
       risk_txt <- data.table::fcase(risk_val < 1, "Low",
                                     risk_val >=1 &
@@ -222,10 +213,10 @@ server <- function(input, output) {
                                        risk_val <6, "High",
                                     risk_val >=6, "Very high",
                                     default = "Error"
-                                    )
+      )
       paste("Risk of new primary infections:", risk_txt)
    })
-DMod$cohort_list[[9]]$w_c[indx >= 860 & indx <=890,]
+
 
 
 }
