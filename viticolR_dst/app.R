@@ -77,6 +77,9 @@ ui <- fluidPage(
                  tableOutput("PI_table")) # end of verticalLayout
       ), # end of tabpanel
       tabPanel("Forecast risk",
+               selectInput("Days2forecast_rain",
+                           "How many days to the next rain event",
+                           choices = c(0:6,"> 7")),
                numericInput("forecast_rain","Forecast rain days in the next week",
                             min = 0, max = 7,value = 1),
                code(textOutput(outputId ="txtRisk")),
@@ -102,12 +105,13 @@ server <- function(input, output) {
    }
    # What are the surviving cohort numbers
    surviving_cohorts <-
-      Ddates[primary_infection_stage == "spo_death_hour" &
-                is.na(hour),cohort]
+      sum(unlist(
+         lapply(1:DMod$cohorts,function(x){
+            last(DMod$cohort_list[[x]]$w_c$ZooWindow)})))
    # Get the germination times of the cohorts
    surviving_co_time <-
       Ddates[primary_infection_stage == "spo_germination_hour " &
-                surviving_cohorts %in% cohort,hour]
+                cohort %in% surviving_cohorts ,hour]
 
 
    output$img_leaf <- renderImage({
@@ -196,9 +200,17 @@ server <- function(input, output) {
       paste("Infections in latent period:",length(cohorts_in_latent))
    })
    output$txtRisk <- renderText({
-      Sprgia <- length(Ddates[primary_infection_stage == "spo_death_hour" &
-                                 is.na(hour),hour])
-      risk_val <- Sprgia * input$forecast_rain
+      days2rain <- ifelse(input$Days2forecast_rain== "> 7",7,
+                          as.numeric(input$Days2forecast_rain))
+
+      # get time cohorts have been surviving for
+      surviving_co_time <- difftime(max(surviving_co_time),
+                                    data.table::last(DMod$time_hours),
+                                    units = "hours")
+      dry_out_factor <-
+         1 - ecdf(spo_survival)(surviving_co_time + (days2rain * 24))
+
+      risk_val <- length(surviving_cohorts) * input$forecast_rain * dry_out_factor
       risk_txt <- data.table::fcase(risk_val < 1, "Low",
                                     risk_val >=1 &
                                        risk_val <4 , "Medium",
