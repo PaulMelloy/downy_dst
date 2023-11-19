@@ -13,6 +13,7 @@ source("R/ccs_styles.R")
 
 load("/homevol/pmelloy/Weather observations/DM_dst_data.rda")
 Ddates <- viticolaR::get_PI_dates(DMod)
+last_mod_time <- max(DMod$w$times, na.rm = TRUE)
 
 
 
@@ -104,14 +105,17 @@ server <- function(input, output) {
                                  units = "hours"))
    }
    # What are the surviving cohort numbers
-   surviving_cohorts <-
-      sum(unlist(
-         lapply(1:DMod$cohorts,function(x){
-            last(DMod$cohort_list[[x]]$w_c$ZooWindow)})))
+   surviving_zoospore <-
+      Ddates[primary_infection_stage == "mature_zoopores" &
+                    hour >= (last_mod_time - 3600),.N]
    # Get the germination times of the cohorts
-   surviving_co_time <-
-      Ddates[primary_infection_stage == "spo_germination_hour " &
-                cohort %in% surviving_cohorts ,hour]
+   if(surviving_zoospore > 0){
+   surviving_zoo_time <-
+      Ddates[primary_infection_stage == "mature_zoopores" &
+                hour >= (last_mod_time - 3600),
+             hour]}else{
+                surviving_zoo_time <- NULL
+             }
 
 
    output$img_leaf <- renderImage({
@@ -185,7 +189,7 @@ server <- function(input, output) {
    })
    output$txtSporangReady <- renderText({
       paste("Current surviving Sporangia cohorts:",
-            length(surviving_cohorts))
+            surviving_zoospore)
    })
    output$txtlatentPs <- renderText({
       #get number of zoospore infections with no infection symptom estimation
@@ -204,13 +208,14 @@ server <- function(input, output) {
                           as.numeric(input$Days2forecast_rain))
 
       # get time cohorts have been surviving for
-      surviving_co_time <- difftime(max(surviving_co_time),
+      surviving_cz_time <- abs(difftime(max(Ddates[primary_infection_stage == "mature_zoopores",
+                                               max(hour,na.rm = TRUE)]),
                                     data.table::last(DMod$time_hours),
-                                    units = "hours")
+                                    units = "hours"))
       dry_out_factor <-
-         1 - ecdf(spo_survival)(surviving_co_time + (days2rain * 24))
+         1 - ecdf(spo_survival)(surviving_cz_time + (days2rain * 24))
 
-      risk_val <- length(surviving_cohorts) * input$forecast_rain * dry_out_factor
+      risk_val <- surviving_zoospore * input$forecast_rain * dry_out_factor
       risk_txt <- data.table::fcase(risk_val < 1, "Low",
                                     risk_val >=1 &
                                        risk_val <4 , "Medium",
