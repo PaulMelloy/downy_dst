@@ -1,68 +1,115 @@
 # This is the non-live version, delete when copying
- # cp -r "/homevol/pmelloy/R/downy_dst/viticolR_dst/"
- #       "/homevol/pmelloy/shiny-server/viticolR_dst/"
+ # cp -TR "/homevol/pmelloy/R/downy_dst/viticolR_dst/" "/homevol/pmelloy/shiny-server/viticolR_dst/"
 
 if("/usr/lib/R/site-library" %in% .libPaths()){
    .libPaths("/homevol/pmelloy/R/x86_64-pc-linux-gnu-library/4.3")}
 library(shiny)
 library(data.table)
 library(viticolaR)
+library(shinythemes)
 #library(DT)
 library(ggplot2)
 source("R/ccs_styles.R")
 
 load("/homevol/pmelloy/Weather observations/DM_dst_data.rda")
 Ddates <- viticolaR::get_PI_dates(DMod)
+
+# arrage Ddates for plot
+Ddates[, primary_infection_stage := factor(primary_infection_stage,
+                                            levels = c("spo_germination_hour", "spo_death_hour",
+                                                       "zoo_release_ind","zoo_dispersal_ind",
+                                                       "zoo_infection_ind","mature_zoopores",
+                                                       "INC_h_lower", "INC_h_upper"))]
+
 last_mod_time <- max(DMod$w$times, na.rm = TRUE)
 
 
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(
+   # # Styling
+   theme = shinytheme("superhero"),
+   # tags$head(tags$style("{color: white;
+   #                               font-size: 20px;
+   #                               font-style: italic;
+   #                               }")
+   #           ),
+   tags$style('.container-fluid {
+              background-color: #49125c;
+              }'),
+
+
    titlePanel(div(HTML("Downy Mildew (<i>Plasmodium viticola</i>) decision support tool"))),
 
    tabsetPanel(
       tabPanel("viticolR",
-               h2("Splash page"),
-               p("A mechanistic compartment model to assist in fungicide decision
-                 support for downy mildew (_Plasmodia viticola_) infections in
-                 grapevines."),
-               h4("Developed from the literature by Dr Paul Melloy, The University of Queensland"),
-               p("Funding for this project was provided through the"),
-               a(href = "https://agriculture-food-sustainability.uq.edu.au/article/2022/03/uq-launches-kickstarter-grants-facilitate-collaboration-industry",
-                 "Agrifood Kickstarter grant"),
-               p("funding in partnership with"),
-               a(href = "https://www.cauldrondistillery.com.au/", "Cauldron distillery"),
+               h2("viticolR"),
+               p(HTML("A mechanistic compartment model to assist in fungicide decision
+                 support for downy mildew (<i>Plasmodia viticola</i>) infections in
+                 grapevines.")),
+               p(""),
+               p(""),
+               h3("Adapted from scientific literature by Dr Paul Melloy, The University of Queensland"),
+               p("Funding for this project was provided through the",
+                 a("Agrifood Kickstarter grant",
+                   href = "https://agriculture-food-sustainability.uq.edu.au/article/2022/03/uq-launches-kickstarter-grants-facilitate-collaboration-industry"),
+                 "funding in partnership with", a(href = "https://www.cauldrondistillery.com.au/", "Cauldron distillery")),
                p(),
-               img(src = "grapeleaf_DM_infected.jpg",
+               hr(),
+               h3("Input vineyard details"),
+               dateInput("BudBurst", "Date of Bud burst",value = paste0(year(Sys.Date()),"-08-25")),
+
+
+               img(src = "InspectingLeaves.jpg",
                    align = "center",
-                   height = "70%",
-                   width = "70%"),
+                   height = "50%",
+                   width = "50%"),
+               p(),
                p("This model is translated and adapted from the published paper 'A
                  mechanistic model simulating primary infections of downy mildew
                  in grapevine' authored by Vittorio Rossi, Tito Caffi,
                  Simona Giosue and Riccardo Bugiani. This paper was first published
-                 in Ecological Modelling in **2008**.")
+                 in Ecological Modelling in **2008**.", a("10.1016/j.ecolmodel.2007.10.046", href = "https://www.sciencedirect.com/science/article/pii/S0304380007005881"))
       ),
       tabPanel("Seasonal progress",
                h2("Seasonal progress of residual oospores germinating"),
                h3(paste("North Tamborine mountain, last updated:",
                         as.POSIXct(data.table::last(DMod$time_hours),tz = "Australia/Brisbane"))),
                plotOutput("HT_Plot")),
-      tabPanel("Primary disepersals",
+      tabPanel("Primary dispersals",
                h2("Primary zoospore dispersals from oospore sporangia"),
                h3(paste("North Tamborine mountain, last updated:",
                         as.POSIXct(data.table::last(DMod$time_hours),tz = "Australia/Brisbane"))),
                verticalLayout(
                   ccs_style(1),
                   code(textOutput(outputId ="txtOosporeGerm" )),
+                  p("The number of germinated oospore cohorts over the whole season.",
+                    "Sporangia germinate from oospores following rain and survive for some time."),
                   ccs_style(2),
                   code(textOutput(outputId ="txtDeadSpor")),
+                  p("Number or cohorts which have germinated and not survived until
+                    conditions were suitable for a dispersal event."),
+                  code(textOutput(outputId ="txtCohortSurvival")),
+                  p("Sporangia survival time range in hours for this site."),
                   ccs_style(3),
                   code(textOutput(outputId ="txtZooInf")),
+                  p("Number of times primary infection events in this season.",
+                    "This is when zoospores have successfully been dispersed by
+                    rain splash from sporangia onto leaves and conditions have
+                    been suitable enough for zoospores to survive and infect."),
                   ccs_style(3),
                   code(textOutput(outputId ="txtSporangReady")),
+                  p("Number of germinated sporangia cohorts which could lead to
+                    a zoospore spread event if it rains"),
+                  code(textOutput(outputId ="mature_zoo_time")),
+                  p("Most recent time when surviving sporangia contained mature
+                    zoospores ready for dispersal. It is likely that any rain within
+                    1 - 48 hours of this time will lead to a dispersal event"),
                   code(textOutput(outputId ="txtlatentPs")),
+                  p("When zoospores have been spread and caused infection, however
+                    have yet to produce symptoms.",
+                    "During this period there is an oppotunitiy to apply fungicide
+                    to treat the infection"),
                   plotOutput("PI_plot"),
                   p("This plot shows how many 'cohorts' or events where oospores
                  have germinated sporangia (spo_germination_hour), which have
@@ -116,6 +163,14 @@ server <- function(input, output) {
              hour]}else{
                 surviving_zoo_time <- NULL
              }
+   output$mature_zoo_time <- renderText({
+      if(is.null(surviving_zoo_time)){
+         "No recently matured zoospores"
+      }else{
+         paste0("Zoospores recently matured at: ",
+                surviving_zoo_time)
+      }
+   })
 
 
    output$img_leaf <- renderImage({
@@ -136,7 +191,7 @@ server <- function(input, output) {
       plot(
          x = DMod$time_hours,
          y = DMod$Hyd_t,
-         ylim = c(0, 9),
+         ylim = c(0, 13),
          ylab = "Hydrothemal time",
          xlab = "date",
          type = "l",
@@ -153,12 +208,22 @@ server <- function(input, output) {
            y = 5,labels = "Downy Mildew season",
            col = "blue",
            srt = 270)
+      abline(v = as.POSIXct(input$BudBurst),
+             col = "forestgreen")
+      text(x = as.POSIXct(input$BudBurst)+100000,
+           y = 11, labels = "Bud Burst Date",
+           col = "forestgreen",
+           srt = 270)
 
    })
 
    output$PI_plot <- renderPlot({
       Ddates[primary_infection_stage != "spo_death_hour" &
-                is.na(hour) == FALSE] |>
+                primary_infection_stage != "INC_h_lower" &
+                primary_infection_stage != "INC_h_upper" &
+                is.na(hour) == FALSE &
+                hour >= as.POSIXct(input$BudBurst)
+             ,] |>
          ggplot(aes(x = hour,
                     y = primary_infection_stage,
                     group = factor(cohort)))+
@@ -169,23 +234,29 @@ server <- function(input, output) {
    # text descriptions of model output
    output$txtOosporeGerm <- renderText({
       paste("Total sporangia germinations this season:",
-            max(Ddates$cohort))
+            Ddates[hour >= as.POSIXct(input$BudBurst), max(cohort)])
    })
 
-   zoo_dispersals <- Ddates[primary_infection_stage == "zoo_dispersal_ind" &
-                               is.na(hour)==FALSE,hour]
+   zoo_dispersals <- reactive({
+      Ddates[primary_infection_stage == "zoo_dispersal_ind" &
+                hour >= as.POSIXct(input$BudBurst) &
+                is.na(hour)==FALSE,hour]
+   })
+
+
    output$txtDeadSpor <- renderText({
       paste("Sporagia deaths before dispersal:",
-            max(Ddates$cohort) - length(zoo_dispersals))
+            max(Ddates$cohort) - length(zoo_dispersals()))
    })
    output$txtZooDisp <- renderText({
       paste("Zoospore dispersals to vine leaves:",
-            length(zoo_dispersals))
+            length(zoo_dispersals()))
    })
    output$txtZooInf <- renderText({
       paste("Sucessful zoospore infections:",
             length(Ddates[primary_infection_stage == "zoo_dispersal_ind" &
-                             is.na(hour)==FALSE,hour]))
+                             is.na(hour)==FALSE &
+                             hour >= as.POSIXct(input$BudBurst),hour]))
    })
    output$txtSporangReady <- renderText({
       paste("Current surviving Sporangia cohorts:",
@@ -203,15 +274,26 @@ server <- function(input, output) {
 
       paste("Infections in latent period:",length(cohorts_in_latent))
    })
+
+   # get time cohorts have been surviving for
+   surviving_cz_time <- abs(difftime(max(Ddates[primary_infection_stage == "mature_zoopores",
+                                                max(hour,na.rm = TRUE)]),
+                                     data.table::last(DMod$time_hours),
+                                     units = "hours"))
+
+   output$txtCohortSurvival <- renderText({
+      paste("Sporangia survial range in hours: ",
+         round(quantile(spo_survival,0.025, na.rm = TRUE)),
+            " - ",
+            round(quantile(spo_survival,0.975, na.rm = TRUE)))
+   })
+
+
    output$txtRisk <- renderText({
       days2rain <- ifelse(input$Days2forecast_rain== "> 7",7,
                           as.numeric(input$Days2forecast_rain))
 
-      # get time cohorts have been surviving for
-      surviving_cz_time <- abs(difftime(max(Ddates[primary_infection_stage == "mature_zoopores",
-                                               max(hour,na.rm = TRUE)]),
-                                    data.table::last(DMod$time_hours),
-                                    units = "hours"))
+
       dry_out_factor <-
          1 - ecdf(spo_survival)(surviving_cz_time + (days2rain * 24))
 
