@@ -12,6 +12,7 @@ library(ggplot2)
 source("R/ccs_styles.R")
 
 load("/homevol/pmelloy/Weather observations/DM_dst_data.rda")
+DMod <- DMod_NT
 Ddates <- viticolaR::get_PI_dates(DMod)
 
 # arrage Ddates for plot
@@ -57,6 +58,9 @@ ui <- fluidPage(
                p(),
                hr(),
                h3("Input vineyard details"),
+               selectInput("station", "Station location",
+                           choices = c("North Tamborine",
+                                       "Applethorpe")),
                dateInput("BudBurst", "Date of Bud burst",value = paste0(year(Sys.Date()),"-08-25")),
 
 
