@@ -13,16 +13,6 @@ source("R/ccs_styles.R")
 
 load("/homevol/pmelloy/Weather observations/DM_dst_data.rda")
 DMod <- DMod_NT
-Ddates <- viticolaR::get_PI_dates(DMod)
-
-# arrage Ddates for plot
-Ddates[, primary_infection_stage := factor(primary_infection_stage,
-                                            levels = c("spo_germination_hour", "spo_death_hour",
-                                                       "zoo_release_ind","zoo_dispersal_ind",
-                                                       "zoo_infection_ind","mature_zoopores",
-                                                       "INC_h_lower", "INC_h_upper"))]
-
-
 
 
 # Define UI for application that draws a histogram
@@ -152,32 +142,46 @@ server <- function(input, output) {
    output$last_mod_time2 <- renderText(lmt())
    last_mod_time <- reactive(max(DMod$w$times, na.rm = TRUE))
 
+   # Format model output into a data.table of dates for each stage
+   Ddates <- reactive({
+      downy_dates <- viticolaR::get_PI_dates(DMod)
+
+      # arrange categories for plot
+      downy_dates[, primary_infection_stage := factor(primary_infection_stage,
+                                                 levels = c("spo_germination_hour", "spo_death_hour",
+                                                            "zoo_release_ind","zoo_dispersal_ind",
+                                                            "zoo_infection_ind","mature_zoopores",
+                                                            "INC_h_lower", "INC_h_upper"))]
+      downy_dates
+      })
 
 
    # create a vector of sporangia survival lengths to determine likelihood
    # this could be made faster by casting wide and then calculating
-   for (i in unique(Ddates$cohort)) {
-      if (i == 1)
-         spo_survival <- vector(mode = "numeric")
-      spo_survival <- c(spo_survival,
-                        difftime(Ddates[cohort == i &
-                                           primary_infection_stage == "spo_death_hour", hour],
-                                 Ddates[cohort == i &
-                                           primary_infection_stage == "spo_germination_hour", hour],
-                                 units = "hours"))
-   }
+   spo_survival <- reactive({
+      for (i in unique(Ddates()$cohort)) {
+         if (i == 1)
+            spo_sur <- vector(mode = "numeric")
+         spo_sur <- c(spo_sur,
+                      difftime(Ddates()[cohort == i &
+                                         primary_infection_stage == "spo_death_hour", hour],
+                               Ddates()[cohort == i &
+                                         primary_infection_stage == "spo_germination_hour", hour],
+                               units = "hours"))
+      }
+      spo_sur
+   })
 
    # What are the surviving cohort numbers
    surviving_zoospore <- reactive({
-      Ddates[primary_infection_stage == "mature_zoopores" &
+      Ddates()[primary_infection_stage == "mature_zoopores" &
                 hour >= (last_mod_time() - 3600),.N]})
 
+   # Get the germination times of the cohorts
    output$mature_zoo_time <- renderText({
-
-      # Get the germination times of the cohorts
       if(surviving_zoospore() > 0){
          surviving_zoo_time <-
-            Ddates[primary_infection_stage == "mature_zoopores" &
+            Ddates()[primary_infection_stage == "mature_zoopores" &
                       hour >= (last_mod_time() - 3600),
                    hour]}else{
                       surviving_zoo_time <- NULL
@@ -195,15 +199,17 @@ server <- function(input, output) {
    output$img_leaf <- renderImage({
       list(src = "www/grapeleaf_DM_infected.jpg",
            alt = "Grapevine leaf infected with downy mildew")
-   },deleteFile = FALSE)
+   }, deleteFile = FALSE)
 
    # output$w_table <- renderDataTable(NT_weather)
    output$PI_table <-
-      renderTable(Ddates[(primary_infection_stage == "zoo_dispersal_ind" |
-                             primary_infection_stage == "zoo_infection_ind") &
-                            is.na(hour) == FALSE,list(cohort,
-                                                      primary_infection_stage,
-                                                      Time = as.character(hour))])
+      renderTable(Ddates()[(
+         primary_infection_stage == "zoo_dispersal_ind" |
+            primary_infection_stage == "zoo_infection_ind"
+      ) &
+         is.na(hour) == FALSE, list(cohort,
+                                    primary_infection_stage,
+                                    Time = as.character(hour))])
 
    # render plot of hydrothermal time
    output$HT_Plot <- renderPlot({
@@ -237,7 +243,7 @@ server <- function(input, output) {
    })
 
    output$PI_plot <- renderPlot({
-      Ddates[primary_infection_stage != "spo_death_hour" &
+      Ddates()[primary_infection_stage != "spo_death_hour" &
                 primary_infection_stage != "INC_h_lower" &
                 primary_infection_stage != "INC_h_upper" &
                 is.na(hour) == FALSE &
@@ -253,11 +259,11 @@ server <- function(input, output) {
    # text descriptions of model output
    output$txtOosporeGerm <- renderText({
       paste("Total sporangia germinations this season:",
-            Ddates[hour >= as.POSIXct(input$BudBurst), max(cohort)])
+            Ddates()[hour >= as.POSIXct(input$BudBurst), max(cohort)])
    })
 
    zoo_dispersals <- reactive({
-      Ddates[primary_infection_stage == "zoo_dispersal_ind" &
+      Ddates()[primary_infection_stage == "zoo_dispersal_ind" &
                 hour >= as.POSIXct(input$BudBurst) &
                 is.na(hour)==FALSE,hour]
    })
@@ -265,7 +271,7 @@ server <- function(input, output) {
 
    output$txtDeadSpor <- renderText({
       paste("Sporagia deaths before dispersal:",
-            max(Ddates$cohort) - length(zoo_dispersals()))
+            max(Ddates()$cohort) - length(zoo_dispersals()))
    })
    output$txtZooDisp <- renderText({
       paste("Zoospore dispersals to vine leaves:",
@@ -273,7 +279,7 @@ server <- function(input, output) {
    })
    output$txtZooInf <- renderText({
       paste("Sucessful zoospore infections:",
-            length(Ddates[primary_infection_stage == "zoo_dispersal_ind" &
+            length(Ddates()[primary_infection_stage == "zoo_dispersal_ind" &
                              is.na(hour)==FALSE &
                              hour >= as.POSIXct(input$BudBurst),hour]))
    })
@@ -283,10 +289,10 @@ server <- function(input, output) {
    })
    output$txtlatentPs <- renderText({
       #get number of zoospore infections with no infection symptom estimation
-      infected_cohorts <- Ddates[primary_infection_stage == "zoo_infection_ind" &
+      infected_cohorts <- Ddates()[primary_infection_stage == "zoo_infection_ind" &
                                     is.na(hour)==FALSE,cohort]
       cohorts_in_latent <-
-         Ddates[infected_cohorts %in% cohort &
+         Ddates()[infected_cohorts %in% cohort &
                    (primary_infection_stage == "INC_h_upper" |
                        primary_infection_stage == "INC_h_lower")&
                    hour > last(DMod$time_hours),unique(cohort)]
@@ -295,26 +301,28 @@ server <- function(input, output) {
    })
 
    # get time cohorts have been surviving for
-   surviving_cz_time <- abs(difftime(max(Ddates[primary_infection_stage == "mature_zoopores",
-                                                max(hour,na.rm = TRUE)]),
-                                     data.table::last(DMod$time_hours),
-                                     units = "hours"))
+   surviving_cz_time <-
+      reactive({
+         abs(difftime(max(Ddates[primary_infection_stage == "mature_zoopores",
+                                 max(hour, na.rm = TRUE)]),
+                      data.table::last(DMod$time_hours),
+                      units = "hours"))
+      })
 
    output$txtCohortSurvival <- renderText({
       paste("Sporangia survial range in hours: ",
-         round(quantile(spo_survival,0.025, na.rm = TRUE)),
+         round(quantile(spo_survival(),0.025, na.rm = TRUE)),
             " - ",
-            round(quantile(spo_survival,0.975, na.rm = TRUE)))
+            round(quantile(spo_survival(),0.975, na.rm = TRUE)))
    })
 
-
+   # Calculate the risk of primary infection
    output$txtRisk <- renderText({
       days2rain <- ifelse(input$Days2forecast_rain== "> 7",7,
                           as.numeric(input$Days2forecast_rain))
 
-
       dry_out_factor <-
-         1 - ecdf(spo_survival)(surviving_cz_time + (days2rain * 24))
+         1 - ecdf(spo_survival())(surviving_cz_time() + (days2rain * 24))
 
       risk_val <- surviving_zoospore() * input$forecast_rain * dry_out_factor
       risk_txt <- data.table::fcase(risk_val < 1, "Low",
