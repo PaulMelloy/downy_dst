@@ -22,7 +22,6 @@ Ddates[, primary_infection_stage := factor(primary_infection_stage,
                                                        "zoo_infection_ind","mature_zoopores",
                                                        "INC_h_lower", "INC_h_upper"))]
 
-last_mod_time <- max(DMod$w$times, na.rm = TRUE)
 
 
 
@@ -141,12 +140,18 @@ ui <- fluidPage(
 # Define server logic required to draw a histogram
 server <- function(input, output) {
 
+   # Model last modified time (lmt)
+   # use a reactive expression to render the standardised text
    lmt <- reactive({
       paste("Model last updated:",
             as.POSIXct(data.table::last(DMod$time_hours),
-                       tz = "Australia/Brisbane"))})
-output$last_mod_time <- renderText(lmt())
-output$last_mod_time2 <- renderText(lmt())
+                       tz = "Australia/Brisbane"))
+   })
+   # it is output twice, html only allows one output per id so it needs duplication
+   output$last_mod_time <- renderText(lmt())
+   output$last_mod_time2 <- renderText(lmt())
+   last_mod_time <- reactive(max(DMod$w$times, na.rm = TRUE))
+
 
 
    # create a vector of sporangia survival lengths to determine likelihood
@@ -161,19 +166,23 @@ output$last_mod_time2 <- renderText(lmt())
                                            primary_infection_stage == "spo_germination_hour", hour],
                                  units = "hours"))
    }
+
    # What are the surviving cohort numbers
-   surviving_zoospore <-
+   surviving_zoospore <- reactive({
       Ddates[primary_infection_stage == "mature_zoopores" &
-                    hour >= (last_mod_time - 3600),.N]
-   # Get the germination times of the cohorts
-   if(surviving_zoospore > 0){
-   surviving_zoo_time <-
-      Ddates[primary_infection_stage == "mature_zoopores" &
-                hour >= (last_mod_time - 3600),
-             hour]}else{
-                surviving_zoo_time <- NULL
-             }
+                hour >= (last_mod_time() - 3600),.N]})
+
    output$mature_zoo_time <- renderText({
+
+      # Get the germination times of the cohorts
+      if(surviving_zoospore() > 0){
+         surviving_zoo_time <-
+            Ddates[primary_infection_stage == "mature_zoopores" &
+                      hour >= (last_mod_time() - 3600),
+                   hour]}else{
+                      surviving_zoo_time <- NULL
+                   }
+
       if(is.null(surviving_zoo_time)){
          "No recently matured zoospores"
       }else{
@@ -270,7 +279,7 @@ output$last_mod_time2 <- renderText(lmt())
    })
    output$txtSporangReady <- renderText({
       paste("Current surviving Sporangia cohorts:",
-            surviving_zoospore)
+            surviving_zoospore())
    })
    output$txtlatentPs <- renderText({
       #get number of zoospore infections with no infection symptom estimation
@@ -307,7 +316,7 @@ output$last_mod_time2 <- renderText(lmt())
       dry_out_factor <-
          1 - ecdf(spo_survival)(surviving_cz_time + (days2rain * 24))
 
-      risk_val <- surviving_zoospore * input$forecast_rain * dry_out_factor
+      risk_val <- surviving_zoospore() * input$forecast_rain * dry_out_factor
       risk_txt <- data.table::fcase(risk_val < 1, "Low",
                                     risk_val >=1 &
                                        risk_val <4 , "Medium",
