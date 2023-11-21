@@ -303,7 +303,7 @@ server <- function(input, output) {
    # get time cohorts have been surviving for
    surviving_cz_time <-
       reactive({
-         abs(difftime(max(Ddates[primary_infection_stage == "mature_zoopores",
+         abs(difftime(max(Ddates()[primary_infection_stage == "mature_zoopores",
                                  max(hour, na.rm = TRUE)]),
                       data.table::last(DMod$time_hours),
                       units = "hours"))
