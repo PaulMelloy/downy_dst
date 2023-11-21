@@ -77,13 +77,11 @@ ui <- fluidPage(
       ),
       tabPanel("Seasonal progress",
                h2("Seasonal progress of residual oospores germinating"),
-               h3(paste("North Tamborine mountain, last updated:",
-                        as.POSIXct(data.table::last(DMod$time_hours),tz = "Australia/Brisbane"))),
+               h3(textOutput(outputId = "last_mod_time")),
                plotOutput("HT_Plot")),
       tabPanel("Primary dispersals",
                h2("Primary zoospore dispersals from oospore sporangia"),
-               h3(paste("North Tamborine mountain, last updated:",
-                        as.POSIXct(data.table::last(DMod$time_hours),tz = "Australia/Brisbane"))),
+               h3(textOutput(outputId = "last_mod_time2")),
                verticalLayout(
                   ccs_style(1),
                   code(textOutput(outputId ="txtOosporeGerm" )),
@@ -142,6 +140,14 @@ ui <- fluidPage(
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
+
+   lmt <- reactive({
+      paste("Model last updated:",
+            as.POSIXct(data.table::last(DMod$time_hours),
+                       tz = "Australia/Brisbane"))})
+output$last_mod_time <- renderText(lmt())
+output$last_mod_time2 <- renderText(lmt())
+
 
    # create a vector of sporangia survival lengths to determine likelihood
    # this could be made faster by casting wide and then calculating
