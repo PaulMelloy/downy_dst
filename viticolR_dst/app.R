@@ -130,21 +130,31 @@ ui <- fluidPage(
 # Define server logic required to draw a histogram
 server <- function(input, output) {
 
+   downy_model <- reactive({
+      if(input$station == "North Tamborine"){
+         downy_mod <- DMod_NT
+      }
+      if(input$station == "Applethorpe"){
+         downy_mod <- DMod_AT
+      }
+      downy_mod
+   })
+
    # Model last modified time (lmt)
    # use a reactive expression to render the standardised text
    lmt <- reactive({
       paste("Model last updated:",
-            as.POSIXct(data.table::last(DMod$time_hours),
+            as.POSIXct(data.table::last(downy_model()$time_hours),
                        tz = "Australia/Brisbane"))
    })
    # it is output twice, html only allows one output per id so it needs duplication
    output$last_mod_time <- renderText(lmt())
    output$last_mod_time2 <- renderText(lmt())
-   last_mod_time <- reactive(max(DMod$w$times, na.rm = TRUE))
+   last_mod_time <- reactive(max(downy_model()$w$times, na.rm = TRUE))
 
    # Format model output into a data.table of dates for each stage
    Ddates <- reactive({
-      downy_dates <- viticolaR::get_PI_dates(DMod)
+      downy_dates <- viticolaR::get_PI_dates(downy_model())
 
       # arrange categories for plot
       downy_dates[, primary_infection_stage := factor(primary_infection_stage,
@@ -214,8 +224,8 @@ server <- function(input, output) {
    # render plot of hydrothermal time
    output$HT_Plot <- renderPlot({
       plot(
-         x = DMod$time_hours,
-         y = DMod$Hyd_t,
+         x = downy_model()$time_hours,
+         y = downy_model()$Hyd_t,
          ylim = c(0, 13),
          ylab = "Hydrothemal time",
          xlab = "date",
@@ -223,13 +233,13 @@ server <- function(input, output) {
          col = "red",
          lwd = 5
       )
-      rect(xleft = DMod$time_hours[1]-30,
-           xright = last(DMod$time_hours)+30,
+      rect(xleft = downy_model()$time_hours[1]-30,
+           xright = last(downy_model()$time_hours)+30,
            ybottom = 1.3,
            ytop = 8.6,
            col = rgb(0,0,1,alpha = 0.2),
            border = NA)
-      text(x = DMod$time_hours[300],
+      text(x = downy_model()$time_hours[300],
            y = 5,labels = "Downy Mildew season",
            col = "blue",
            srt = 270)
@@ -295,7 +305,7 @@ server <- function(input, output) {
          Ddates()[infected_cohorts %in% cohort &
                    (primary_infection_stage == "INC_h_upper" |
                        primary_infection_stage == "INC_h_lower")&
-                   hour > last(DMod$time_hours),unique(cohort)]
+                   hour > last(downy_model()$time_hours),unique(cohort)]
 
       paste("Infections in latent period:",length(cohorts_in_latent))
    })
@@ -305,7 +315,7 @@ server <- function(input, output) {
       reactive({
          abs(difftime(max(Ddates()[primary_infection_stage == "mature_zoopores",
                                  max(hour, na.rm = TRUE)]),
-                      data.table::last(DMod$time_hours),
+                      data.table::last(downy_model()$time_hours),
                       units = "hours"))
       })
 
