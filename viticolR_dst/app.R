@@ -11,8 +11,13 @@ library(shinythemes)
 library(ggplot2)
 source("R/ccs_styles.R")
 
+if(Sys.info()["nodename"] == "r-studio"){
+   load("/homevol/pmelloy/Weather observations/DM_dst_data.rda")
+}else{
+   load("C:/R/downy_dst/data/DM_dst_data.rda")
+}
 # Load the last model run
-load("/homevol/pmelloy/Weather observations/DM_dst_data.rda")
+
 # assign default model as North Tamborine
 DMod <- DMod_NT
 
@@ -135,6 +140,7 @@ ui <- fluidPage(
 # Define server logic required to draw a histogram
 server <- function(input, output) {
 
+   # Set data source according to weather station selected
    downy_model <- reactive({
       if(input$station == "North Tamborine"){
          downy_mod <- DMod_NT
