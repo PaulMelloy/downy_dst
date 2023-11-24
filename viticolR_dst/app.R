@@ -11,7 +11,9 @@ library(shinythemes)
 library(ggplot2)
 source("R/ccs_styles.R")
 
+# Load the last model run
 load("/homevol/pmelloy/Weather observations/DM_dst_data.rda")
+# assign default model as North Tamborine
 DMod <- DMod_NT
 
 
@@ -25,7 +27,7 @@ ui <- fluidPage(
    #                               }")
    #           ),
    tags$style('.container-fluid {
-              background-color: #49125c;
+              background-color: #25052e;
               }'),
 
 
@@ -64,10 +66,13 @@ ui <- fluidPage(
                  Simona Giosue and Riccardo Bugiani. This paper was first published
                  in Ecological Modelling in **2008**.", a("10.1016/j.ecolmodel.2007.10.046", href = "https://www.sciencedirect.com/science/article/pii/S0304380007005881"))
       ),
+
+      #------------------------------------------------------------------------
       tabPanel("Seasonal progress",
                h2("Seasonal progress of residual oospores germinating"),
                h3(textOutput(outputId = "last_mod_time")),
                plotOutput("HT_Plot")),
+      #------------------------------------------------------------------------
       tabPanel("Primary dispersals",
                h2("Primary zoospore dispersals from oospore sporangia"),
                h3(textOutput(outputId = "last_mod_time2")),
@@ -143,7 +148,8 @@ server <- function(input, output) {
    # Model last modified time (lmt)
    # use a reactive expression to render the standardised text
    lmt <- reactive({
-      paste("Model last updated:",
+      paste("Model last updated for",
+            input$station,":",
             as.POSIXct(data.table::last(downy_model()$time_hours),
                        tz = "Australia/Brisbane"))
    })
@@ -201,7 +207,7 @@ server <- function(input, output) {
          "No recently matured zoospores"
       }else{
          paste0("Zoospores recently matured at: ",
-                surviving_zoo_time)
+                surviving_zoo_time,"\n")
       }
    })
 
@@ -269,19 +275,17 @@ server <- function(input, output) {
    # text descriptions of model output
    output$txtOosporeGerm <- renderText({
       paste("Total sporangia germinations this season:",
-            Ddates()[hour >= as.POSIXct(input$BudBurst), max(cohort)])
+            max(Ddates()$cohort))
    })
+   output$txtDeadSpor <- renderText({
+      paste("Sporagia deaths before dispersal:",
+            max(Ddates()$cohort) - length(zoo_dispersals()))
+   }) # is this needed or informative?
 
    zoo_dispersals <- reactive({
       Ddates()[primary_infection_stage == "zoo_dispersal_ind" &
                 hour >= as.POSIXct(input$BudBurst) &
                 is.na(hour)==FALSE,hour]
-   })
-
-
-   output$txtDeadSpor <- renderText({
-      paste("Sporagia deaths before dispersal:",
-            max(Ddates()$cohort) - length(zoo_dispersals()))
    })
    output$txtZooDisp <- renderText({
       paste("Zoospore dispersals to vine leaves:",
