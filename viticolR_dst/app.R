@@ -113,7 +113,7 @@ ui <- fluidPage(
                     to treat the infection"),
                   plotOutput("PI_plot"),
                   p("This plot shows how many 'cohorts' or events where oospores
-                 have germinated sporangia (spo_germination_hour), which have
+                 have germinated sporangia (GEO_h), which have
                  then released zoospores (zoo_release_ind).
                  If a rain event occurs when the zoospores have been released
                  before the zoospores dry out and die then the zoospores have a
@@ -170,9 +170,9 @@ server <- function(input, output) {
 
       # arrange categories for plot
       downy_dates[, primary_infection_stage := factor(primary_infection_stage,
-                                                 levels = c("spo_germination_hour", "spo_death_hour",
-                                                            "zoo_release_ind","zoo_dispersal_ind",
-                                                            "zoo_infection_ind","mature_zoopores",
+                                                 levels = c("GEO_h", "ZRE_ind",
+                                                            "ZDI_ind", "ZIN_ind",
+                                                            "SUZ_death_ind", "SUS_death_h",
                                                             "INC_h_lower", "INC_h_upper"))]
       downy_dates
       })
@@ -186,9 +186,9 @@ server <- function(input, output) {
             spo_sur <- vector(mode = "numeric")
          spo_sur <- c(spo_sur,
                       difftime(Ddates()[cohort == i &
-                                         primary_infection_stage == "spo_death_hour", hour],
+                                         primary_infection_stage == "SUS_death_h", hour],
                                Ddates()[cohort == i &
-                                         primary_infection_stage == "spo_germination_hour", hour],
+                                         primary_infection_stage == "GEO_h", hour],
                                units = "hours"))
       }
       spo_sur
@@ -196,14 +196,14 @@ server <- function(input, output) {
 
    # What are the surviving cohort numbers
    surviving_zoospore <- reactive({
-      Ddates()[primary_infection_stage == "mature_zoopores" &
+      Ddates()[primary_infection_stage == "ZRE_ind" &
                 hour >= (last_mod_time() - 3600),.N]})
 
-   # Get the germination times of the cohorts
+   # Are there any current mature zoospores
    output$mature_zoo_time <- renderText({
       if(surviving_zoospore() > 0){
          surviving_zoo_time <-
-            Ddates()[primary_infection_stage == "mature_zoopores" &
+            Ddates()[primary_infection_stage == "SUZ_death_ind" &
                       hour >= (last_mod_time() - 3600),
                    hour]}else{
                       surviving_zoo_time <- NULL
@@ -226,8 +226,8 @@ server <- function(input, output) {
    # output$w_table <- renderDataTable(NT_weather)
    output$PI_table <-
       renderTable(Ddates()[(
-         primary_infection_stage == "zoo_dispersal_ind" |
-            primary_infection_stage == "zoo_infection_ind"
+         primary_infection_stage == "ZDI_ind" |
+            primary_infection_stage == "ZIN_ind"
       ) &
          is.na(hour) == FALSE, list(cohort,
                                     primary_infection_stage,
@@ -265,7 +265,7 @@ server <- function(input, output) {
    })
 
    output$PI_plot <- renderPlot({
-      Ddates()[primary_infection_stage != "spo_death_hour" &
+      Ddates()[primary_infection_stage != "SUS_death_h" &
                 primary_infection_stage != "INC_h_lower" &
                 primary_infection_stage != "INC_h_upper" &
                 is.na(hour) == FALSE &
@@ -289,7 +289,7 @@ server <- function(input, output) {
    }) # is this needed or informative?
 
    zoo_dispersals <- reactive({
-      Ddates()[primary_infection_stage == "zoo_dispersal_ind" &
+      Ddates()[primary_infection_stage == "ZDI_ind" &
                 hour >= as.POSIXct(input$BudBurst) &
                 is.na(hour)==FALSE,hour]
    })
@@ -299,7 +299,7 @@ server <- function(input, output) {
    })
    output$txtZooInf <- renderText({
       paste("Sucessful zoospore infections:",
-            length(Ddates()[primary_infection_stage == "zoo_dispersal_ind" &
+            length(Ddates()[primary_infection_stage == "ZDI_ind" &
                              is.na(hour)==FALSE &
                              hour >= as.POSIXct(input$BudBurst),hour]))
    })
@@ -309,13 +309,13 @@ server <- function(input, output) {
    })
    output$txtlatentPs <- renderText({
       #get number of zoospore infections with no infection symptom estimation
-      infected_cohorts <- Ddates()[primary_infection_stage == "zoo_infection_ind" &
+      infected_cohorts <- Ddates()[primary_infection_stage == "ZIN_ind" &
                                     is.na(hour)==FALSE,cohort]
       cohorts_in_latent <-
-         Ddates()[infected_cohorts %in% cohort &
+         Ddates()[cohort %in% infected_cohorts &
                    (primary_infection_stage == "INC_h_upper" |
                        primary_infection_stage == "INC_h_lower")&
-                   hour > last(downy_model()$time_hours),unique(cohort)]
+                   hour >= last(downy_model()$time_hours),unique(cohort)]
 
       paste("Infections in latent period:",length(cohorts_in_latent))
    })
@@ -323,7 +323,7 @@ server <- function(input, output) {
    # get time cohorts have been surviving for
    surviving_cz_time <-
       reactive({
-         abs(difftime(max(Ddates()[primary_infection_stage == "mature_zoopores",
+         abs(difftime(max(Ddates()[primary_infection_stage == "SUS_death_h",
                                  max(hour, na.rm = TRUE)]),
                       data.table::last(downy_model()$time_hours),
                       units = "hours"))
