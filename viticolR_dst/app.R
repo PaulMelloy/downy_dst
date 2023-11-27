@@ -11,7 +11,7 @@ library(shinythemes)
 library(ggplot2)
 source("R/ccs_styles.R")
 
-if(Sys.info()["nodename"] == "r-studio"){
+if(Sys.info()["nodename"] == "rstudio"){
    load("/homevol/pmelloy/Weather observations/DM_dst_data.rda")
 }else{
    load("C:/R/downy_dst/data/DM_dst_data.rda")
