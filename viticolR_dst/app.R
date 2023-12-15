@@ -42,24 +42,18 @@ ui <- fluidPage(
       tabPanel("viticolR",
                h2("viticolR"),
                p(HTML("A mechanistic compartment model to assist in fungicide decision
-                 support for downy mildew (<i>Plasmodia viticola</i>) infections in
-                 grapevines.")),
+                 support for downy mildew (<i>Plasmodia viticola</i>) primary
+                 infections in grapevines.")),
                p(""),
                p(""),
-               h3("Adapted from scientific literature by Dr Paul Melloy, The University of Queensland"),
+               h3("Adapted from scientific literature by",
+                  a("Dr Paul Melloy, The University of Queensland",
+                    href = "https://researchers.uq.edu.au/researcher/37467")),
                p("Funding for this project was provided through the",
                  a("Agrifood Kickstarter grant",
                    href = "https://agriculture-food-sustainability.uq.edu.au/article/2022/03/uq-launches-kickstarter-grants-facilitate-collaboration-industry"),
                  "funding in partnership with", a(href = "https://www.cauldrondistillery.com.au/", "Cauldron distillery")),
                p(),
-               hr(),
-               h3("Input vineyard details"),
-               selectInput("station", "Station location",
-                           choices = c("North Tamborine",
-                                       "Applethorpe")),
-               dateInput("BudBurst", "Date of Bud burst",value = paste0(year(Sys.Date()),"-08-25")),
-
-
                img(src = "InspectingLeaves.jpg",
                    align = "center",
                    height = "50%",
@@ -69,10 +63,42 @@ ui <- fluidPage(
                  mechanistic model simulating primary infections of downy mildew
                  in grapevine' authored by Vittorio Rossi, Tito Caffi,
                  Simona Giosue and Riccardo Bugiani. This paper was first published
-                 in Ecological Modelling in **2008**.", a("10.1016/j.ecolmodel.2007.10.046", href = "https://www.sciencedirect.com/science/article/pii/S0304380007005881"))
+                 in Ecological Modelling in **2008**.",
+                 a("10.1016/j.ecolmodel.2007.10.046",
+                   href = "https://www.sciencedirect.com/science/article/pii/S0304380007005881")),
+               hr()
       ),
 
       #------------------------------------------------------------------------
+      tabPanel("Getting started",
+               h3("Disclaimer:"),
+               p("This model uses weather inputs to estimate the steps in primary
+                 inoculum dispersal.",
+                 "The closer the weather station to the vineyard, the more accurate
+                 the estimations.",
+                 "Importantly, this model does not account for secondary infections.",
+                 "Once downy mildew is established in the vineyard disease can develop
+                 rapidly.",
+                 "Use of this model should be used to prevent primary leaf infections"),
+               p(),
+               p("Primary innoculum is the source of the first infections in a crop.
+                 The source of which is usually from downy mildew resting structures
+                 called oospores.",
+                 "Oospores form in infected leaf litter from the previous season
+                 and require 'overwintering'"),
+               hr(),
+               h3("Input vineyard details"),
+               selectInput("station", "Weather Station location",
+                           choices = c("North Tamborine (QLD)",
+                                       "Applethorpe (QLD)",
+                                       "Mildura Airport (VIC)",
+                                       "Loxton Research station (SA)",
+                                       "Walpuep Research station (VIC)")),
+      dateInput("BudBurst", "Date of Bud burst",value = paste0(year(Sys.Date()),"-08-25")),
+      ),
+      #-------------------------------------------------------------------
+
+
       tabPanel("Seasonal progress",
                h2("Seasonal progress of residual oospores germinating"),
                h3(textOutput(outputId = "last_mod_time")),
@@ -142,11 +168,20 @@ server <- function(input, output) {
 
    # Set data source according to weather station selected
    downy_model <- reactive({
-      if(input$station == "North Tamborine"){
+      if(input$station == "North Tamborine (QLD)"){
          downy_mod <- DMod_NT
       }
-      if(input$station == "Applethorpe"){
+      if(input$station == "Applethorpe (QLD)"){
          downy_mod <- DMod_AT
+      }
+      if(input$station == "Mildura Airport (VIC)"){
+         downy_mod <- DMod_MI
+      }
+      if(input$station == "Loxton Research station (SA)"){
+         downy_mod <- DMod_LX
+      }
+      if(input$station == "Walpuep Research station (VIC)"){
+         downy_mod <- DMod_WA
       }
       downy_mod
    })
