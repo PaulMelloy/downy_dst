@@ -32,9 +32,10 @@ ui <- fluidPage(
    #                               }")
    #           ),
    tags$style('.container-fluid {
-              background-color: #25052e;
-              }'),
-
+              background-color: #25052e;}'),
+   tags$style('.navbar-default {
+              background-color:#1e043b}
+              '),
 
    titlePanel(div(HTML("Downy Mildew (<i>Plasmodium viticola</i>) decision support tool"))),
 
@@ -46,7 +47,7 @@ ui <- fluidPage(
                  infections in grapevines.")),
                p(""),
                p(""),
-               h3("Adapted from scientific literature by",
+               h4("Adapted from scientific literature by",
                   a("Dr Paul Melloy, The University of Queensland",
                     href = "https://researchers.uq.edu.au/researcher/37467")),
                p("Funding for this project was provided through the",
@@ -58,12 +59,33 @@ ui <- fluidPage(
                    align = "center",
                    height = "50%",
                    width = "50%"),
+               h3("Disclaimer:"),
+               p("This app is to be used as a guide in making more informed fungicide
+                 management decisions.",
+                 "Individual circumstances and conditions may vary, and local conditions
+                 should be also concidered when deciding on the appropriate fungicide
+                 application"),
+               p("Always apply fungicide according to the label recommendataions"),
+               h4("Model estimates primary innoculum dispersal only:"),
+               p("    This model uses weather inputs to estimate the steps in primary
+                 inoculum dispersal and therefore is influenced by the AWS accuracy.",
+                 "The closer the weather station to the vineyard, the more accurate
+                 the estimations.",
+                 "By default missing rainfall observations are filled with 0"),
+               p("This model does not account for secondary infections.",
+                 HTML("<b>If downy mildew is already present on the leaves, an alternate
+                 fungicide approach should be considered as this decision support
+                 tool would be misleading</b>"),
+                 "Once downy mildew is established in the vineyard disease can develop
+                 rapidly.",
+                 "Use of this model should be used to prevent primary leaf infections"),
+               hr(),
                p(),
-               p("This model is translated and adapted from the published paper 'A
+               p(HTML("This model is translated and adapted from the published paper 'A
                  mechanistic model simulating primary infections of downy mildew
                  in grapevine' authored by Vittorio Rossi, Tito Caffi,
                  Simona Giosue and Riccardo Bugiani. This paper was first published
-                 in Ecological Modelling in **2008**.",
+                 in Ecological Modelling in <b>2008</b>."),
                  a("10.1016/j.ecolmodel.2007.10.046",
                    href = "https://www.sciencedirect.com/science/article/pii/S0304380007005881")),
                hr()
@@ -71,22 +93,7 @@ ui <- fluidPage(
 
       #------------------------------------------------------------------------
       tabPanel("Getting started",
-               h3("Disclaimer:"),
-               p("This model uses weather inputs to estimate the steps in primary
-                 inoculum dispersal.",
-                 "The closer the weather station to the vineyard, the more accurate
-                 the estimations.",
-                 "Importantly, this model does not account for secondary infections.",
-                 "Once downy mildew is established in the vineyard disease can develop
-                 rapidly.",
-                 "Use of this model should be used to prevent primary leaf infections"),
-               p(),
-               p("Primary innoculum is the source of the first infections in a crop.
-                 The source of which is usually from downy mildew resting structures
-                 called oospores.",
-                 "Oospores form in infected leaf litter from the previous season
-                 and require 'overwintering'"),
-               hr(),
+
                h3("Input vineyard details"),
                selectInput("station", "Weather Station location",
                            choices = c("North Tamborine (QLD)",
@@ -94,11 +101,28 @@ ui <- fluidPage(
                                        "Mildura Airport (VIC)",
                                        "Loxton Research station (SA)",
                                        "Walpuep Research station (VIC)")),
-      dateInput("BudBurst", "Date of Bud burst",value = paste0(year(Sys.Date()),"-08-25")),
-      ),
+               dateInput("BudBurst", "Date of Bud burst",value = paste0(year(Sys.Date()),"-08-25")),
+               hr(),
+               h4("Downy mildew infection process:"),
+               p("  Primary innoculum is the source of the first infections in a crop.
+                 The source of which is usually from downy mildew resting structures
+                 called oospores residing in leaf litter from the previous season.",
+                 "Overwintered oospores germinate 'sporangia' progressivly through
+                 grape growing season when there is suffifient moisture.",
+                 "If conditions remain suitable for sporangia development and
+                 survival, zoospore mature within the head of the sporangia.",
+                 "When zoospores are mature rainfall events are required for
+                 dispersal to a living host leaf.",
+                 "Environmental conditions, and leaf moisture, need to remain suitable
+                 for infection following dispersal for infection to be successful.",
+                 "Following a successful infection the pathogen incubates during the
+                 'latent' period', the time between infection and visible symptoms
+                 in the form of 'oilspots'"),
+               img(src = "2008_Rossi_DownyPrimaryInfection.png",
+                   align = "center"),
+               p(),
+               p(HTML("Figure reproduced from Rossi et al. (2008),  <i>'A mechanistic model simulating primary infections of downy mildew in grapevine'</i>"))),
       #-------------------------------------------------------------------
-
-
       tabPanel("Seasonal progress",
                h2("Seasonal progress of residual oospores germinating"),
                h3(textOutput(outputId = "last_mod_time")),
@@ -154,14 +178,15 @@ ui <- fluidPage(
       tabPanel("Forecast risk",
                selectInput("Days2forecast_rain",
                            "How many days to the next rain event",
-                           choices = c(0:6,"> 7")),
+                           choices = c(0:6,"> 7"),
+                           selected = 4),
                numericInput("forecast_rain","Forecast rain days in the next week",
                             min = 0, max = 7,value = 1),
-               code(textOutput(outputId ="txtRisk")),
+               code(textOutput(outputId ="txtRisk"))
 
-      )
-   )
-)
+      ) # end risk panel
+   )# end risk panel
+)# end tabset panel
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
@@ -379,7 +404,14 @@ server <- function(input, output) {
       dry_out_factor <-
          1 - ecdf(spo_survival())(surviving_cz_time() + (days2rain * 24))
 
-      risk_val <- surviving_zoospore() * input$forecast_rain * dry_out_factor
+      if(surviving_zoospore() == 0){
+         # if ther are no surviviing zoospores, estimate the risk based on rainfall
+         risk_val <- fcase(quantile(spo_survival(),0,na.rm = TRUE) > (days2rain * 24),4 + (input$forecast_rain*0.7),
+                           quantile(spo_survival(),1,na.rm = TRUE) > (days2rain * 24), (input$forecast_rain*0.7),
+                           default = 0)
+      }else{
+      risk_val <- surviving_zoospore() * input$forecast_rain * dry_out_factor}
+
       risk_txt <- data.table::fcase(risk_val < 1, "Low",
                                     risk_val >=1 &
                                        risk_val <4 , "Medium",
