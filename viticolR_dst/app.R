@@ -1,14 +1,15 @@
 # This is the non-live version, delete when copying
  # cp -TR "/homevol/pmelloy/R/downy_dst/viticolR_dst/" "/homevol/pmelloy/shiny-server/viticolR_dst/"
-
+message(.libPaths())
 if("/usr/lib/R/site-library" %in% .libPaths()){
    .libPaths("/homevol/pmelloy/R/x86_64-pc-linux-gnu-library/4.3")}
-library(shiny)
-library(data.table)
-library(viticolaR)
-library(shinythemes)
+library(fastmap,lib.loc = "/homevol/pmelloy/R/x86_64-pc-linux-gnu-library/4.3")
+library(shiny,lib.loc = "/homevol/pmelloy/R/x86_64-pc-linux-gnu-library/4.3")
+library(data.table,lib.loc = "/homevol/pmelloy/R/x86_64-pc-linux-gnu-library/4.3")
+library(viticolaR,lib.loc = "/homevol/pmelloy/R/x86_64-pc-linux-gnu-library/4.3")
+library(shinythemes,lib.loc = "/homevol/pmelloy/R/x86_64-pc-linux-gnu-library/4.3")
 #library(DT)
-library(ggplot2)
+library(ggplot2,lib.loc = "/homevol/pmelloy/R/x86_64-pc-linux-gnu-library/4.3")
 source("R/ccs_styles.R")
 
 if(Sys.info()["nodename"] == "rstudio"){
