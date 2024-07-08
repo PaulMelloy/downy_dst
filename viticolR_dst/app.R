@@ -12,7 +12,7 @@ library(shinythemes,lib.loc = "/homevol/pmelloy/R/x86_64-pc-linux-gnu-library/4.
 library(ggplot2,lib.loc = "/homevol/pmelloy/R/x86_64-pc-linux-gnu-library/4.3")
 source("R/ccs_styles.R")
 
-if(Sys.info()["nodename"] == "rs"){
+if(Sys.info()["nodename"] == "viticola"){
    load("/homevol/pmelloy/Weather observations/DM_dst_data.rda")
 }else{
    load("C:/R/downy_dst/data/DM_dst_data.rda")
