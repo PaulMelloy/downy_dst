@@ -2,14 +2,14 @@
  # cp -TR "/homevol/pmelloy/R/downy_dst/viticolR_dst/" "/homevol/pmelloy/shiny-server/viticolR_dst/"
 message(.libPaths())
 if("/usr/lib/R/site-library" %in% .libPaths()){
-   .libPaths("/homevol/pmelloy/R/x86_64-pc-linux-gnu-library/4.3")}
-library(fastmap,lib.loc = "/homevol/pmelloy/R/x86_64-pc-linux-gnu-library/4.3")
-library(shiny,lib.loc = "/homevol/pmelloy/R/x86_64-pc-linux-gnu-library/4.3")
-library(data.table,lib.loc = "/homevol/pmelloy/R/x86_64-pc-linux-gnu-library/4.3")
-library(viticolaR,lib.loc = "/homevol/pmelloy/R/x86_64-pc-linux-gnu-library/4.3")
-library(shinythemes,lib.loc = "/homevol/pmelloy/R/x86_64-pc-linux-gnu-library/4.3")
+   .libPaths("/homevol/pmelloy/R/x86_64-pc-linux-gnu-library/4.4")}
+#library(fastmap,lib.loc = "/homevol/pmelloy/R/x86_64-pc-linux-gnu-library/4.4")
+library(shiny,lib.loc = "/homevol/pmelloy/R/x86_64-pc-linux-gnu-library/4.4")
+library(data.table,lib.loc = "/homevol/pmelloy/R/x86_64-pc-linux-gnu-library/4.4")
+library(viticolaR,lib.loc = "/homevol/pmelloy/R/x86_64-pc-linux-gnu-library/4.4")
+library(shinythemes,lib.loc = "/homevol/pmelloy/R/x86_64-pc-linux-gnu-library/4.4")
 #library(DT)
-library(ggplot2,lib.loc = "/homevol/pmelloy/R/x86_64-pc-linux-gnu-library/4.3")
+library(ggplot2,lib.loc = "/homevol/pmelloy/R/x86_64-pc-linux-gnu-library/4.4")
 source("R/ccs_styles.R")
 
 if(Sys.info()["nodename"] == "viticola"){
