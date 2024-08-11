@@ -146,7 +146,7 @@ ui <- fluidPage(
                verticalLayout(
                   ccs_style(1),
                   code(textOutput(outputId ="txtOosporeGerm" )),
-                  column(6,div(style='width:1000px;overflow-x: scroll;height:320px;',
+                  column(12,div(style='width:auto;overflow-x: scroll;height:320px;',
                      plotOutput("PI_SPO_plot",width = plot_width,height = "300px"))),
                   p("The number of germinated oospore cohorts over the whole season.",
                     "Sporangia germinate from oospores following rain and survive for some time."),
