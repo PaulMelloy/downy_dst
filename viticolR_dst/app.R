@@ -3,25 +3,36 @@
 message(.libPaths())
 if("/usr/lib/R/site-library" %in% .libPaths()){
    .libPaths("/homevol/pmelloy/R/x86_64-pc-linux-gnu-library/4.4")}
+local_library <- switch(Sys.info()["nodename"],
+                        "PURPLE-DP" = "C:/Users/mel096/AppData/Local/R/win-library/4.4",
+                        "viticola" = "/homevol/pmelloy/R/x86_64-pc-linux-gnu-library/4.4")
+
+switch(Sys.info()["nodename"],
+       "PURPLE-DP" = load("C:/Users/mel096/OneDrive - CSIRO/Data/DM_dst_data.rda"),
+       "viticola" = load("/homevol/pmelloy/Weather observations/DM_dst_data.rda"))
+
 #library(fastmap,lib.loc = "/homevol/pmelloy/R/x86_64-pc-linux-gnu-library/4.4")
-library(shiny,lib.loc = "/homevol/pmelloy/R/x86_64-pc-linux-gnu-library/4.4")
-library(data.table,lib.loc = "/homevol/pmelloy/R/x86_64-pc-linux-gnu-library/4.4")
-library(viticolaR,lib.loc = "/homevol/pmelloy/R/x86_64-pc-linux-gnu-library/4.4")
-library(shinythemes,lib.loc = "/homevol/pmelloy/R/x86_64-pc-linux-gnu-library/4.4")
+library(shiny,lib.loc = local_library)
+library(data.table,lib.loc = local_library)
+library(viticolaR,lib.loc = local_library)
+library(shinythemes,lib.loc = local_library)
 #library(DT)
-library(ggplot2,lib.loc = "/homevol/pmelloy/R/x86_64-pc-linux-gnu-library/4.4")
+library(ggplot2,lib.loc = local_library)
 source("R/ccs_styles.R")
 
-if(Sys.info()["nodename"] == "viticola"){
-   load("/homevol/pmelloy/Weather observations/DM_dst_data.rda")
-}else{
-   load("C:/R/downy_dst/data/DM_dst_data.rda")
-}
+# if(Sys.info()["nodename"] == "viticola"){
+#    load("/homevol/pmelloy/Weather observations/DM_dst_data.rda")
+# }else{
+#    load("C:/R/downy_dst/data/DM_dst_data.rda")
+# }
 # Load the last model run
 
 # assign default model as North Tamborine
 DMod <- DMod_NT
 
+plot_width <- ifelse(length(DMod$time_hours) < 1000,
+                     "auto",
+                     paste0(length(DMod$time_hours),"px"))
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(
@@ -135,6 +146,8 @@ ui <- fluidPage(
                verticalLayout(
                   ccs_style(1),
                   code(textOutput(outputId ="txtOosporeGerm" )),
+                  column(6,div(style='width:1000px;overflow-x: scroll;height:320px;',
+                     plotOutput("PI_SPO_plot",width = plot_width,height = "300px"))),
                   p("The number of germinated oospore cohorts over the whole season.",
                     "Sporangia germinate from oospores following rain and survive for some time."),
                   ccs_style(2),
@@ -162,7 +175,7 @@ ui <- fluidPage(
                     have yet to produce symptoms.",
                     "During this period there is an oppotunitiy to apply fungicide
                     to treat the infection"),
-                  plotOutput("PI_plot"),
+                  p("\n"),
                   p("This plot shows how many 'cohorts' or events where oospores
                  have germinated sporangia (GEO_h), which have
                  then released zoospores (zoo_release_ind).
@@ -325,18 +338,41 @@ server <- function(input, output) {
 
    })
 
-   output$PI_plot <- renderPlot({
-      Ddates()[primary_infection_stage != "SUS_death_h" &
-                primary_infection_stage != "INC_h_lower" &
-                primary_infection_stage != "INC_h_upper" &
-                is.na(hour) == FALSE &
-                hour >= as.POSIXct(input$BudBurst)
-             ,] |>
-         ggplot(aes(x = hour,
-                    y = primary_infection_stage,
-                    group = factor(cohort)))+
-         geom_line()+
-         theme_minimal()
+   output$PI_SPO_plot <- renderPlot({
+      ggplot() +
+         geom_ribbon_viticolaR(downy_model())+
+         geom_line_viticolaR(downy_model())+
+         scale_fill_gradient(name = "Mature Sporangia\ncohorts",
+                             low = "#EBE9CF",
+                             high = "#ADA205")+
+         scale_color_continuous(name = "Immature sporangia\ncohorts")+
+         theme_minimal()+
+         coord_cartesian(ylim = c(0,1.2))+
+         ylab("Progress towards sporangia maturity")+
+         theme(legend.position="bottom")+
+         geom_rect(aes(xmin = head(downy_model()$time_hours,n = 1),
+                       xmax = tail(downy_model()$time_hours,n = 1),
+                       ymin = 1,
+                       ymax = 2),
+                       fill = "grey",
+                       alpha = 0.6)+
+         scale_x_continuous(breaks = seq(min(downy_model()$time_hours),
+                                                 max(downy_model()$time_hours),
+                                                 by = 60*60*24*2))+
+         theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+
+      # Ddates()[primary_infection_stage != "SUS_death_h" &
+      #           primary_infection_stage != "INC_h_lower" &
+      #           primary_infection_stage != "INC_h_upper" &
+      #           is.na(hour) == FALSE &
+      #           hour >= as.POSIXct(input$BudBurst)
+      #        ,] |>
+      #    ggplot(aes(x = hour,
+      #               y = primary_infection_stage,
+      #               group = factor(cohort)))+
+      #    geom_line()+
+      #    theme_minimal()
    })
 
    # text descriptions of model output
