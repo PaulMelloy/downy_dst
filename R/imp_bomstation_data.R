@@ -25,11 +25,11 @@ imp_bomstation_data <- function(path,
                                 min_wd_sd = 50,
                                 rainNA = NA){
 
-   if(length(unique(wdata$name))> 1) stop("Two weather station names exist in weather
-                                         file. Please remove data from one of the stations")
-
    # read in data
    wdata <- fread(path)
+
+   if(length(unique(wdata$name))> 1) stop("Two weather station names exist in weather
+                                         file. Please remove data from one of the stations")
 
    wdata$lon <- lon
    wdata$lat <- lat
@@ -42,8 +42,8 @@ imp_bomstation_data <- function(path,
    # create standard deviation of wind speed
    # given the wikipedia description between wind gusts and average wind speed
    # we will use 1 sd as half the difference between wind speed and wind gusts
-   wdata[, wsp_sd := (gust_kmh - wind_spd_kmh)/2]
-   wdata[, wdir_sd := min_wd_sd]
+   #wdata[, wsp_sd := (gust_kmh - wind_spd_kmh)/2]
+   #wdata[, wdir_sd := min_wd_sd]
 
 
    # for information on what the column headers relate to
@@ -59,7 +59,6 @@ imp_bomstation_data <- function(path,
             rh = "rel_hum",
             ws = "wind_spd_kmh",
             wd = "wind_dir_deg",
-            wd_sd = "wdir_sd",
             station = "name",
             lon = "lon",
             lat = "lat",
@@ -80,11 +79,11 @@ imp_bomstation_data <- function(path,
       wdata[is.na(rain), rain := rainNA]
    }
 
-   # create standard deviation of wind speed
-   # given the wikipedia description between wind gusts and average wind speed
-   # we will use 1 sd as half the difference between wind speed and wind gusts
-   wdata[, wsp_sd := (gust_kmh - wind_spd_kmh)/2]
-   wdata[, wdir_sd := min_wd_sd]
+   # # create standard deviation of wind speed
+   # # given the wikipedia description between wind gusts and average wind speed
+   # # we will use 1 sd as half the difference between wind speed and wind gusts
+   # wdata[, wsp_sd := (gust_kmh - wind_spd_kmh)/2]
+   # wdata[, wdir_sd := min_wd_sd]
 
 
    return(wdata)
