@@ -1,0 +1,224 @@
+---
+title: "2023-Assessement"
+output: html_document
+date: "2024-08-27"
+---
+
+Import R librarys and weather data.  
+
+```{r}
+library(data.table)
+library(viticolaR)
+library(epiphytoolR)
+library(weatherOz,lib.loc = 'C:/Users/mel096/AppData/Local/R/win-library/4.4')
+library(ggplot2)
+library(nasapower)
+
+# read in north tamborine weather data
+ntw <- fread("./data/23-24_NTamborine.csv")
+```
+
+
+Inspect weather data.  
+
+```{r}
+head(ntw)[,1:10]
+```
+
+Some columns need formatting
+
+```{r}
+# Format time record
+ntw[,time_utc := as.POSIXct(as.character(aifstime_utc), format= "%Y%m%d%H%M%S")]
+ntw[,time_local := as.POSIXct(as.character(aifstime_local), format= "%Y%m%d%H%M%S", tz = "Australia/Brisbane")]
+
+# place in order
+ntw <- ntw[order(time_utc)]
+```
+
+Check data for duplication
+
+```{r}
+any(duplicated(ntw))
+```
+
+```{r}
+#lonitude was slightly variable
+range(ntw$lon)
+range(ntw$lat)
+ntw[,lon := mean(lon)]
+ntw[,lat := mean(lat)]
+```
+
+
+Slice data to season
+```{r}
+ntw <- ntw[time_utc > as.POSIXct("2023-06-30", tz = "UTC")]
+```
+
+
+
+Format the weather data for a model readable version
+
+```{r}
+ntw_c <- format_weather(ntw,
+                        POSIXct_time = "time_utc", 
+                        time_zone = "UTC",
+                        temp = "air_temp",
+                        rain = "rain_ten",
+                        rh = "rel_hum",
+                        ws = "wind_spd_kmh",
+                        wd = "wind_dir_deg",
+                        station = "name",
+                        lon = "lon",
+                        lat = "lat",
+                        data_check = FALSE,
+                        muffle_warnings = TRUE
+                        )
+```
+
+This data has gaps Lets inspect the coverage
+
+```{r}
+ntw_c[is.na(rain)]
+```
+
+
+Get silo weather data to patch NA data
+
+```{r,cache=TRUE}
+nasa_w <- nasapower::get_power(community = "AG",
+                               temporal_api = "hourly",
+                               lonlat = c(ntw_c$lon[1],ntw_c$lat[1]),
+                               pars = c("RH2M", "T2M", "PRECTOTCORR"),
+                               dates = c("2023-07-01", "2024-03-30"))
+
+setDT(nasa_w)
+
+nasa_w[,times := as.POSIXct(paste0(YEAR,"-",MO,"-",DY," ",HR,":00:00"))]
+```
+
+
+merge weather data
+
+```{r}
+ntw_c <- merge.data.table(ntw_c,nasa_w,by = "times")
+
+ntw_c[is.na(temp),temp := T2M]
+ntw_c[is.na(rh),rh := RH2M]
+ntw_c[is.na(rain),rain := PRECTOTCORR]
+
+
+fwrite(ntw_c,file = "cache/23-24_weatherdata.csv")
+```
+
+
+```{r}
+if(missing(ntw_c)) ntw_c <- fread("cache/23-24_weatherdata.csv")
+```
+
+### Run model  
+
+```{r}
+mod_dm <- viticolaR::estimate_DM_PI(ntw_c,Start = as.POSIXct("2023-07-01"))
+downy_dates <- get_PI_dates(mod_dm)
+```
+
+
+```{r}
+str(mod_dm[1:6])
+```
+
+Field observations indicated that downy mildew was first detected on the 10th of 
+November 2023.  
+```{r}
+DM_dectected <- as.POSIXct("2023-11-10")
+```
+
+
+
+Plot the hydorlogical time for the 2023 season.
+
+```{r}
+data.frame(time =  mod_dm$time_hours,
+           hydrotime = mod_dm$Hyd_t)|>
+   ggplot(aes(x = time, hydrotime)) +
+   geom_line()+
+   geom_rect(aes(xmin = mod_dm$time_hours[1],
+                 xmax = mod_dm$time_hours[250*24],
+                 ymin = 1.3,
+                 ymax = 8.6),
+             fill = "skyblue", alpha =0.01)+
+   theme_minimal()+
+   theme(axis.text.x = element_text(angle = 90, 
+                                            vjust = 0.5, 
+                                            hjust=1))+
+   ylim(c(0,15))+
+   scale_x_continuous(breaks = (seq(min(mod_dm$time_hours)+10*60*60,
+                                    max(mod_dm$time_hours) - 60*60*24*7*4,
+                                    by = 60*60*24*7)))+
+   geom_vline(xintercept = DM_dectected, colour = "red")+
+   ylab("Hydrothermal time")
+
+```
+
+
+
+
+```{r,cache=TRUE, fig.dim=c(30,10)}
+SPO_plot <-
+   ggplot() +
+         geom_ribbon_viticolaR(mod_dm)+
+         geom_line_viticolaR(mod_dm)+
+         scale_fill_gradient(name = "Mature Sporangia\ncohorts",
+                             low = "#EBE9CF",
+                             high = "#ADA205")+
+         scale_color_continuous(name = "Immature sporangia\ncohorts")+
+         theme_minimal()+
+         coord_cartesian(ylim = c(0,1.2))+
+         ylab("Progress towards sporangia maturity")+
+         theme(legend.position="bottom")+
+         geom_rect(aes(xmin = head(mod_dm$time_hours,n = 1),
+                       xmax = tail(mod_dm$time_hours,n = 1),
+                       ymin = 1,
+                       ymax = 2),
+                       fill = "grey",
+                       alpha = 0.6)+
+         scale_x_continuous(breaks = seq(min(mod_dm$time_hours),
+                                                 max(mod_dm$time_hours),
+                                                 by = 60*60*24*7))+
+         geom_vline(xintercept = DM_dectected, colour = "red")+
+         theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+SPO_plot
+ggsave(filename = "cache/SPO_plot.png",
+       plot = SPO_plot,
+       width = 3000,height = 500, units = "px", dpi = 90)
+```
+
+
+
+
+```{r}
+downy_dates <- fread("cache/PI_dates.csv")
+# downy_dates <- get_PI_dates(mod_dm)
+```
+
+Not sure why get_PI_dates is  not working saved data.table and can read back in.  
+
+
+```{r}
+downy_dates[primary_infection_stage == "GEO_h"][cohort < 55]
+downy_dates[primary_infection_stage == "SUS_death_ind"][cohort < 55]
+downy_dates[primary_infection_stage == "ZRE_ind"][cohort < 55]
+downy_dates[primary_infection_stage == "ZDI_ind"][cohort < 55]
+downy_dates[primary_infection_stage == "ZIN_ind"][cohort < 55]
+downy_dates[primary_infection_stage == "SUZ_death_ind"][cohort < 55]
+
+downy_dates[primary_infection_stage == "INC_h_upper"][cohort < 55]
+```
+
+
+
+
+
