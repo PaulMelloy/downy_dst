@@ -1,15 +1,16 @@
 # This is the non-live version, delete when copying
- # cp -TR "/homevol/pmelloy/R/downy_dst/viticolR_dst/" "/homevol/pmelloy/shiny-server/viticolR_dst/"
+ # cp -TR "/home/pmelloy/downy_dst/viticolR_dst/" "/home/pmelloy/shiny-server/viticolR_dst/"
 message(.libPaths())
+message(list.files("/home/shared/lib/R"))
 if("/usr/lib/R/site-library" %in% .libPaths()){
-   .libPaths("/homevol/pmelloy/R/x86_64-pc-linux-gnu-library/4.4")}
+   .libPaths("/home/shared/lib/R/")}
 local_library <- switch(Sys.info()["nodename"],
                         "PURPLE-DP" = "C:/Users/mel096/AppData/Local/R/win-library/4.4",
-                        "viticola" = "/homevol/pmelloy/R/x86_64-pc-linux-gnu-library/4.4")
+                        "viticolr" = "/home/shared/lib/R/")
 
 switch(Sys.info()["nodename"],
        "PURPLE-DP" = load("C:/Users/mel096/OneDrive - CSIRO/Data/DM_dst_data.rda"),
-       "viticola" = load("/homevol/pmelloy/Weather observations/DM_dst_data.rda"))
+       "viticolr" = load("/home/shiny/DM_dst_data.rda"))
 
 #library(fastmap,lib.loc = "/homevol/pmelloy/R/x86_64-pc-linux-gnu-library/4.4")
 library(shiny,lib.loc = local_library)
@@ -21,14 +22,15 @@ library(ggplot2,lib.loc = local_library)
 source("R/ccs_styles.R")
 
 # if(Sys.info()["nodename"] == "viticola"){
-#    load("/homevol/pmelloy/Weather observations/DM_dst_data.rda")
+#    load("/home/pmelloy/R/x86_64-pc-linux-gnu-library/4.4")
 # }else{
 #    load("C:/R/downy_dst/data/DM_dst_data.rda")
 # }
 # Load the last model run
 
 # assign default model as North Tamborine
-DMod <- DMod_NT
+#DMod <- DMod_NT
+DMod_NT <- DMod
 
 plot_width <- ifelse(length(DMod$time_hours) < 1000,
                      "auto",
