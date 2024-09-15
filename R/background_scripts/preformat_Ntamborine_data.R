@@ -2,9 +2,9 @@
 library(data.table)
 library(epiphytoolR)
 
-if(Sys.info()["nodename"] == "rstudio") {
+if(Sys.info()["nodename"] == "viticolr") {
   # read in latest data
-   NT_weather <- fread("~/Weather observations/NTamborine.csv")
+   NT_weather <- fread("~/weather_data/23-24_NTamborine.csv")
 } else{
   # read in the raw data
    NT_weather <- data.table::fread(
@@ -61,10 +61,10 @@ NT_weather[, tm_imp := round(data.table::frollapply(
 ),3)]
 
 
-# # visualise the fit of the fill
-plot(NT_weather$temp[1050:1600], type = "l")
-lines(NT_weather$tm_imp[1050:1600], type = "l", col = "blue")
-abline(v = seq(0,550, by = 24))
+# # # visualise the fit of the fill
+# plot(NT_weather$temp[1050:1600], type = "l")
+# lines(NT_weather$tm_imp[1050:1600], type = "l", col = "blue")
+# abline(v = seq(0,550, by = 24))
 
 # set the NAs in temperature with the estimated temperature
 NT_weather[is.na(temp), temp:= tm_imp]
@@ -151,4 +151,4 @@ NT_weather[,c("tm_imp", "rh_imp"):= list(NULL,NULL)]
 
 DMod <- viticolaR::estimate_DM_PI(NT_weather)
 
-save(NT_weather, DMod, file = "~/Weather observations/DM_dst_data.rda")
+save(NT_weather, DMod, file = "~/downy_dst/DM_dst_data.rda")

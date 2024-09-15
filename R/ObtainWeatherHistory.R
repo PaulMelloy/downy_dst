@@ -2,7 +2,7 @@ library(data.table)
 library(epiphytoolR)
 
 # find files with desired weather files
-zipfiles <- list.files("/homevol/pmelloy/Weather observations/tgz/",pattern = "_IDW60910.tgz")
+zipfiles <- list.files("~/Weather observations/tgz/",pattern = "_IDW60910.tgz")
 
 for(i in zipfiles){
 # Create weather for Applethorpe
