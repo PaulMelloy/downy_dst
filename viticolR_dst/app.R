@@ -1,7 +1,5 @@
 # This is the non-live version, delete when copying
  # cp -TR "/home/pmelloy/downy_dst/viticolR_dst/" "/home/pmelloy/shiny-server/viticolR_dst/"
-message(.libPaths())
-message(list.files("/home/shared/lib/R"))
 if("/usr/lib/R/site-library" %in% .libPaths()){
    .libPaths("/home/shared/lib/R/")}
 local_library <- switch(Sys.info()["nodename"],
@@ -10,7 +8,7 @@ local_library <- switch(Sys.info()["nodename"],
 
 switch(Sys.info()["nodename"],
        "PURPLE-DP" = load("C:/Users/mel096/OneDrive - CSIRO/Data/DM_dst_data.rda"),
-       "viticolr" = load("/home/shiny/DM_dst_data.rda"))
+       "viticolr" = load("/home/shared/DM_dst_data.rda"))
 
 #library(fastmap,lib.loc = "/homevol/pmelloy/R/x86_64-pc-linux-gnu-library/4.4")
 library(shiny,lib.loc = local_library)
@@ -30,7 +28,7 @@ source("R/ccs_styles.R")
 
 # assign default model as North Tamborine
 #DMod <- DMod_NT
-DMod_NT <- DMod
+DMod <- DMod_list[["23-24_NTamborine"]]
 
 plot_width <- ifelse(length(DMod$time_hours) < 1000,
                      "auto",
@@ -210,19 +208,19 @@ server <- function(input, output) {
    # Set data source according to weather station selected
    downy_model <- reactive({
       if(input$station == "North Tamborine (QLD)"){
-         downy_mod <- DMod_NT
+         downy_mod <- DMod_list[["23-24_NTamborine"]]
       }
       if(input$station == "Applethorpe (QLD)"){
-         downy_mod <- DMod_AT
+         downy_mod <- DMod_list[["23-24_Applethorpe"]]
       }
       if(input$station == "Mildura Airport (VIC)"){
-         downy_mod <- DMod_MI
+         downy_mod <- DMod_list[["23-24_MilduraAP"]]
       }
       if(input$station == "Loxton Research station (SA)"){
-         downy_mod <- DMod_LX
+         downy_mod <- DMod_list[["23-24_LoxtonResearch"]]
       }
       if(input$station == "Walpuep Research station (VIC)"){
-         downy_mod <- DMod_WA
+         downy_mod <- DMod_list[["23-24_WalpeupResearch"]]
       }
       downy_mod
    })
