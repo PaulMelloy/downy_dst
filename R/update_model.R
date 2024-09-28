@@ -21,7 +21,7 @@ working_dir <- path.expand("~/") # default to users home directory
 library(data.table)
 library(epiphytoolR)
 library(viticolaR)
-source("./R/imp_bomstation_data.R")
+source("~/downy_dst/R/imp_bomstation_data.R")
 
 ## -----------------        Settings        -----------------
 dl_path <- paste0(working_dir,"weather_data/tgz/")
@@ -104,9 +104,11 @@ names(weather_list) <- tools::file_path_sans_ext(weather_files)
 DMod_list <- lapply(weather_list,
                     FUN = viticolaR::estimate_DM_PI)
 
+##### testout <- viticolaR::estimate_DM_PI(weather_list[6])
+
 save(DMod_list,
      weather_list,
-     file = paste0(weather_path,"DM_dst_data.rda"))
+     file = paste0("/home/shared/","DM_dst_data.rda"))
 
 # ----------------------------
 # Run Historically
