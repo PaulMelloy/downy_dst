@@ -19,6 +19,7 @@ if("viticolaR" %in% installed.packages()[,"Package"] == FALSE){
 working_dir <- path.expand("~/") # default to users home directory
 
 library(data.table)
+library(ggplot2)
 library(epiphytoolR)
 library(viticolaR)
 source("~/downy_dst/R/imp_bomstation_data.R")
@@ -106,6 +107,54 @@ DMod_list <- lapply(weather_list,
 
 ##### testout <- viticolaR::estimate_DM_PI(weather_list[6])
 
+DMod_list <- lapply(names(DMod_list),function(loc){
+   # get model
+   mod <- DMod_list[[loc]]
+
+   s_mod <- get_PI_dates(mod)
+   s_mod$primary_infection_stage <- as.character(s_mod$primary_infection_stage)
+
+   p_out <-
+   ggplot() +
+      geom_ribbon_viticolaR(mod)+
+      geom_line_viticolaR(mod)+
+      scale_fill_gradient(name = "Mature Sporangia\ncohorts",
+                          low = "#EBE9CF",
+                          high = "#ADA205")+
+      scale_color_continuous(name = "Immature sporangia\ncohorts")+
+      theme_minimal()+
+      coord_cartesian(ylim = c(0,1.2))+
+      ylab("Progress towards sporangia maturity")+
+      theme(legend.position="bottom")+
+      geom_rect(aes(xmin = head(mod$time_hours,n = 1),
+                    xmax = tail(mod$time_hours,n = 1),
+                    ymin = 1,
+                    ymax = 2),
+                fill = "grey",
+                alpha = 0.6)+
+      geom_vline(xintercept = s_mod[primary_infection_stage == "ZRE_ind",hour],
+                 colour = "#efc6c6")+
+      geom_vline(xintercept = s_mod[primary_infection_stage == "ZIN_ind",hour],
+                 colour = "darkred")+
+      scale_x_continuous(breaks = seq(min(mod$time_hours),
+                                      max(mod$time_hours),
+                                      by = 60*60*24*2))+
+      theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+   plot_width <- ifelse(length(mod$time_hours) < 1000,
+                        1000,
+                        length(mod$time_hours))
+   plot_filename <- paste0("/home/shared/",loc,"_PI_SPO_plot.jpg")
+
+   ggplot2::ggsave(filename = plot_filename,
+                   width = plot_width,
+                   height = 300,
+                   units = "px")
+   mod[["PI_SPO_plot"]] <- plot_filename
+
+   return(mod)
+})
+
 save(DMod_list,
      weather_list,
      file = paste0("/home/shared/","DM_dst_data.rda"))
@@ -133,6 +182,33 @@ save(DMod_list,
 #                      base_dir = weather_path,
 #                      verbose = TRUE
 #    )
+mod <- DMod_list[[5]]
+ ggplot() +
+   geom_ribbon_viticolaR(mod, y = "SUZ_h",
+                         x_subset = "ZRE_h")+
+   geom_line_viticolaR(mod)+
+   scale_fill_gradient(name = "Mature Sporangia\ncohorts",
+                       low = "#EBE9CF",
+                       high = "#ADA205")+
+   scale_color_continuous(name = "Immature sporangia\ncohorts")+
+   theme_minimal()+
+   coord_cartesian(ylim = c(0,1.2))+
+   ylab("Progress towards sporangia maturity")+
+   theme(legend.position="bottom")+
+   geom_rect(aes(xmin = head(mod$time_hours,n = 1),
+                 xmax = tail(mod$time_hours,n = 1),
+                 ymin = 1,
+                 ymax = 2),
+             fill = "grey",
+             alpha = 0.6)+
+   scale_x_continuous(breaks = seq(min(mod$time_hours),
+                                   max(mod$time_hours),
+                                   by = 60*60*24*2))+
+   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+plot_width <- ifelse(length(mod$time_hours) < 1000,
+                     1000,
+                     length(mod$time_hours))
 
 
 
