@@ -115,6 +115,8 @@ ui <- fluidPage(
                                        "Walpuep Research station (VIC)")),
                dateInput("BudBurst", "Date of Bud burst",value = paste0(year(Sys.Date()),"-08-25")),
                hr(),
+               plotOutput("weather_plot"),
+               hr(),
                h4("Downy mildew infection process:"),
                p("  Primary innoculum is the source of the first infections in a crop.
                  The source of which is usually from downy mildew resting structures
@@ -144,10 +146,18 @@ ui <- fluidPage(
                h2("Primary zoospore dispersals from oospore sporangia"),
                h3(textOutput(outputId = "last_mod_time2")),
                verticalLayout(
+                  column(12, div(style='width:auto;overflow-x: scroll;height:320px;',
+                     uiOutput("PI_plot"))),
+                  p("Blue lines show the maturation of soil-borne sporangia,
+                  when they reach '1' sporangia are mature and dispersal is possible.n\
+                  Beige areas show times when sporangia are mature and dispersal is possible.\n
+                  Light red lines show a zoospore dispersal event, if no recent protective fungicide
+                  has been applied, apply ASAP or Agriphos which can provide some curative activity.\n
+                  Red lines show zoospore likely infection events.\n\n
+                  You can use this plot to determine the approximate next dispersal event.
+                    "),
                   ccs_style(1),
                   code(textOutput(outputId ="txtOosporeGerm" )),
-                  column(12,div(style='width:auto;overflow-x: scroll;height:320px;',
-                     plotOutput("PI_SPO_plot",width = plot_width,height = "300px"))),
                   p("The number of germinated oospore cohorts over the whole season.",
                     "Sporangia germinate from oospores following rain and survive for some time."),
                   ccs_style(2),
@@ -307,6 +317,10 @@ server <- function(input, output) {
                                     primary_infection_stage,
                                     Time = as.character(hour))])
 
+   output$weather_plot <- renderPlot({
+      viticolaR::plot_weather(downy_model())
+   })
+
    # render plot of hydrothermal time
    output$HT_Plot <- renderPlot({
       plot(
@@ -338,41 +352,33 @@ server <- function(input, output) {
 
    })
 
-   output$PI_SPO_plot <- renderPlot({
-      ggplot() +
-         geom_ribbon_viticolaR(downy_model())+
-         geom_line_viticolaR(downy_model())+
-         scale_fill_gradient(name = "Mature Sporangia\ncohorts",
-                             low = "#EBE9CF",
-                             high = "#ADA205")+
-         scale_color_continuous(name = "Immature sporangia\ncohorts")+
-         theme_minimal()+
-         coord_cartesian(ylim = c(0,1.2))+
-         ylab("Progress towards sporangia maturity")+
-         theme(legend.position="bottom")+
-         geom_rect(aes(xmin = head(downy_model()$time_hours,n = 1),
-                       xmax = tail(downy_model()$time_hours,n = 1),
-                       ymin = 1,
-                       ymax = 2),
-                       fill = "grey",
-                       alpha = 0.6)+
-         scale_x_continuous(breaks = seq(min(downy_model()$time_hours),
-                                                 max(downy_model()$time_hours),
-                                                 by = 60*60*24*2))+
-         theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+   # output$PI_SPO_plot <- renderPlot({
+   #    ggplot() +
+   #       geom_ribbon_viticolaR(downy_model())+
+   #       geom_line_viticolaR(downy_model())+
+   #       scale_fill_gradient(name = "Mature Sporangia\ncohorts",
+   #                           low = "#EBE9CF",
+   #                           high = "#ADA205")+
+   #       scale_color_continuous(name = "Immature sporangia\ncohorts")+
+   #       theme_minimal()+
+   #       coord_cartesian(ylim = c(0,1.2))+
+   #       ylab("Progress towards sporangia maturity")+
+   #       theme(legend.position="bottom")+
+   #       geom_rect(aes(xmin = head(downy_model()$time_hours,n = 1),
+   #                     xmax = tail(downy_model()$time_hours,n = 1),
+   #                     ymin = 1,
+   #                     ymax = 2),
+   #                     fill = "grey",
+   #                     alpha = 0.6)+
+   #       scale_x_continuous(breaks = seq(min(downy_model()$time_hours),
+   #                                               max(downy_model()$time_hours),
+   #                                               by = 60*60*24*2))+
+   #       theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+   # })
 
-
-      # Ddates()[primary_infection_stage != "SUS_death_h" &
-      #           primary_infection_stage != "INC_h_lower" &
-      #           primary_infection_stage != "INC_h_upper" &
-      #           is.na(hour) == FALSE &
-      #           hour >= as.POSIXct(input$BudBurst)
-      #        ,] |>
-      #    ggplot(aes(x = hour,
-      #               y = primary_infection_stage,
-      #               group = factor(cohort)))+
-      #    geom_line()+
-      #    theme_minimal()
+   output$PI_plot <- renderUI({
+      tags$img(src = downy_model()$PI_SPO_plot,
+               height = "300px")
    })
 
    # text descriptions of model output
@@ -435,16 +441,27 @@ server <- function(input, output) {
 
    # Calculate the risk of primary infection
    output$txtRisk <- renderText({
+      # init risk matrix
+      risk_mat <- expand.grid(daytorain = 1:7,
+                              rain_days = 1:7)
+
+      # ensure days to rain is numeric
       days2rain <- ifelse(input$Days2forecast_rain== "> 7",7,
                           as.numeric(input$Days2forecast_rain))
 
+      # calculate a cumulative density to determine how likely sporangia will dry out
+      #  under this locations climate
       dry_out_factor <-
          1 - ecdf(spo_survival())(surviving_cz_time() + (days2rain * 24))
 
       if(surviving_zoospore() == 0){
+          spo_survival()
+
          # if ther are no surviviing zoospores, estimate the risk based on rainfall
-         risk_val <- fcase(quantile(spo_survival(),0,na.rm = TRUE) > (days2rain * 24),4 + (input$forecast_rain*0.7),
-                           quantile(spo_survival(),1,na.rm = TRUE) > (days2rain * 24), (input$forecast_rain*0.7),
+         risk_val <- fcase(quantile(spo_survival(),0,na.rm = TRUE) > (days2rain * 24),
+                           4 + (input$forecast_rain*0.7),
+                           quantile(spo_survival(),1,na.rm = TRUE) > (days2rain * 24),
+                           (input$forecast_rain*0.7),
                            default = 0)
       }else{
       risk_val <- surviving_zoospore() * input$forecast_rain * dry_out_factor}
