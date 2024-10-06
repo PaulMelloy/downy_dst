@@ -48,3 +48,6 @@ po/*~
 
 # RStudio Connect folder
 rsconnect/
+
+# daily update files
+viticolR_dst/www/*plot.png
