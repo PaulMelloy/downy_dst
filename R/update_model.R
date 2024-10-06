@@ -139,21 +139,28 @@ DMod_list <- lapply(names(DMod_list),function(loc){
       scale_x_continuous(breaks = seq(min(mod$time_hours),
                                       max(mod$time_hours),
                                       by = 60*60*24*2))+
-      theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+      theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+            plot.background = element_rect(fill = "white"))
+
 
    plot_width <- ifelse(length(mod$time_hours) < 1000,
-                        1000,
-                        length(mod$time_hours))
-   plot_filename <- paste0("/home/shared/",loc,"_PI_SPO_plot.jpg")
+                        1700,
+                        length(mod$time_hours)*1.5)
+   plot_filename <- paste0(loc,"_PI_SPO_plot.png")
 
-   ggplot2::ggsave(filename = plot_filename,
+   ggplot2::ggsave(filename = paste0("/home/shared/",plot_filename),
                    width = plot_width,
-                   height = 300,
+                   height = 1000,
                    units = "px")
    mod[["PI_SPO_plot"]] <- plot_filename
 
    return(mod)
 })
+
+names(DMod_list) <- tools::file_path_sans_ext(weather_files)
+file.copy(from = list.files("/home/shared/",pattern = ".png", full.names = TRUE),
+          to = "/home/pmelloy/shiny-server/viticolR_dst/www",
+          overwrite = TRUE)
 
 save(DMod_list,
      weather_list,
@@ -182,33 +189,5 @@ save(DMod_list,
 #                      base_dir = weather_path,
 #                      verbose = TRUE
 #    )
-mod <- DMod_list[[5]]
- ggplot() +
-   geom_ribbon_viticolaR(mod, y = "SUZ_h",
-                         x_subset = "ZRE_h")+
-   geom_line_viticolaR(mod)+
-   scale_fill_gradient(name = "Mature Sporangia\ncohorts",
-                       low = "#EBE9CF",
-                       high = "#ADA205")+
-   scale_color_continuous(name = "Immature sporangia\ncohorts")+
-   theme_minimal()+
-   coord_cartesian(ylim = c(0,1.2))+
-   ylab("Progress towards sporangia maturity")+
-   theme(legend.position="bottom")+
-   geom_rect(aes(xmin = head(mod$time_hours,n = 1),
-                 xmax = tail(mod$time_hours,n = 1),
-                 ymin = 1,
-                 ymax = 2),
-             fill = "grey",
-             alpha = 0.6)+
-   scale_x_continuous(breaks = seq(min(mod$time_hours),
-                                   max(mod$time_hours),
-                                   by = 60*60*24*2))+
-   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
-
-plot_width <- ifelse(length(mod$time_hours) < 1000,
-                     1000,
-                     length(mod$time_hours))
-
 
 
