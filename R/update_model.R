@@ -125,7 +125,7 @@ DMod_list <- lapply(names(DMod_list),function(loc){
       theme_minimal()+
       coord_cartesian(ylim = c(0,1.2))+
       ylab("Progress towards sporangia maturity")+
-      theme(legend.position="bottom")+
+      theme(legend.position="bottom",plot.background = element_rect(fill = "white"))+
       geom_rect(aes(xmin = head(mod$time_hours,n = 1),
                     xmax = tail(mod$time_hours,n = 1),
                     ymin = 1,
@@ -139,8 +139,7 @@ DMod_list <- lapply(names(DMod_list),function(loc){
       scale_x_continuous(breaks = seq(min(mod$time_hours),
                                       max(mod$time_hours),
                                       by = 60*60*24*2))+
-      theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
-            plot.background = element_rect(fill = "white"))
+      theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
 
    plot_width <- ifelse(length(mod$time_hours) < 1000,
