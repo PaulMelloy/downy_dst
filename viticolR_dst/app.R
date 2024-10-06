@@ -18,6 +18,7 @@ library(shinythemes,lib.loc = local_library)
 #library(DT)
 library(ggplot2,lib.loc = local_library)
 source("R/ccs_styles.R")
+source("R/est_dm_risk.R")
 
 # if(Sys.info()["nodename"] == "viticola"){
 #    load("/home/pmelloy/R/x86_64-pc-linux-gnu-library/4.4")
@@ -146,16 +147,15 @@ ui <- fluidPage(
                h2("Primary zoospore dispersals from oospore sporangia"),
                h3(textOutput(outputId = "last_mod_time2")),
                verticalLayout(
-                  column(12, div(style='width:auto;overflow-x: scroll;height:320px;',
+                  column(12, div(style='width:auto;overflow-x: scroll;height:550px;',
                      uiOutput("PI_plot"))),
                   p("Blue lines show the maturation of soil-borne sporangia,
-                  when they reach '1' sporangia are mature and dispersal is possible.n\
-                  Beige areas show times when sporangia are mature and dispersal is possible.\n
-                  Light red lines show a zoospore dispersal event, if no recent protective fungicide
-                  has been applied, apply ASAP or Agriphos which can provide some curative activity.\n
-                  Red lines show zoospore likely infection events.\n\n
-                  You can use this plot to determine the approximate next dispersal event.
-                    "),
+                  when they reach '1' sporangia are mature and dispersal is possible."),
+                  p("Beige areas show times when sporangia are mature and dispersal is possible."),
+                  p("Light red lines show a zoospore dispersal event, if no recent protective fungicide
+                  has been applied, apply ASAP or Agriphos which can provide some curative activity."),
+                  p("Red lines show zoospore likely infection events."),
+                  p("You can use this plot to determine the approximate next dispersal event."),
                   ccs_style(1),
                   code(textOutput(outputId ="txtOosporeGerm" )),
                   p("The number of germinated oospore cohorts over the whole season.",
@@ -206,7 +206,8 @@ ui <- fluidPage(
                            selected = 4),
                numericInput("forecast_rain","Forecast rain days in the next week",
                             min = 0, max = 7,value = 1),
-               code(textOutput(outputId ="txtRisk"))
+               code(textOutput(outputId ="txtRisk")),
+               plotOutput("risk_plot")
 
       ) # end risk panel
    )# end risk panel
@@ -318,7 +319,7 @@ server <- function(input, output) {
                                     Time = as.character(hour))])
 
    output$weather_plot <- renderPlot({
-      viticolaR::plot_weather(downy_model())
+      plot_weather(downy_model())
    })
 
    # render plot of hydrothermal time
@@ -378,7 +379,7 @@ server <- function(input, output) {
 
    output$PI_plot <- renderUI({
       tags$img(src = downy_model()$PI_SPO_plot,
-               height = "300px")
+               height = "530px")
    })
 
    # text descriptions of model output
@@ -439,32 +440,36 @@ server <- function(input, output) {
             round(quantile(spo_survival(),0.975, na.rm = TRUE)))
    })
 
+   risk_matrix <-
+      reactive({
+         # init risk matrix
+         risk_mat <- expand.grid(daytorain = 1:7,
+                                 raindays = 1:7)
+
+            risk_mat$dm_risk <-
+               apply(risk_mat,MARGIN = 1,function(r){
+                  est_dm_risk(days_to_rain = r["daytorain"],
+                              rain_days = r["raindays"],
+                              sporangia_survival = spo_survival(),
+                              cohort_survival = surviving_cz_time(),
+                              zoospores_present = surviving_zoospore())
+               })
+
+            as.data.table(risk_mat)
+
+      })
+
    # Calculate the risk of primary infection
    output$txtRisk <- renderText({
-      # init risk matrix
-      risk_mat <- expand.grid(daytorain = 1:7,
-                              rain_days = 1:7)
 
       # ensure days to rain is numeric
-      days2rain <- ifelse(input$Days2forecast_rain== "> 7",7,
-                          as.numeric(input$Days2forecast_rain))
+      days_to_rain <- ifelse(input$Days2forecast_rain== "> 7",7,
+                             as.numeric(input$Days2forecast_rain))
 
-      # calculate a cumulative density to determine how likely sporangia will dry out
-      #  under this locations climate
-      dry_out_factor <-
-         1 - ecdf(spo_survival())(surviving_cz_time() + (days2rain * 24))
+      risk_val <- risk_matrix()[daytorain == days_to_rain &
+                                   raindays == input$forecast_rain,dm_risk]
 
-      if(surviving_zoospore() == 0){
-          spo_survival()
 
-         # if ther are no surviviing zoospores, estimate the risk based on rainfall
-         risk_val <- fcase(quantile(spo_survival(),0,na.rm = TRUE) > (days2rain * 24),
-                           4 + (input$forecast_rain*0.7),
-                           quantile(spo_survival(),1,na.rm = TRUE) > (days2rain * 24),
-                           (input$forecast_rain*0.7),
-                           default = 0)
-      }else{
-      risk_val <- surviving_zoospore() * input$forecast_rain * dry_out_factor}
 
       risk_txt <- data.table::fcase(risk_val < 1, "Low",
                                     risk_val >=1 &
@@ -475,6 +480,20 @@ server <- function(input, output) {
                                     default = "Error"
       )
       paste("Risk of new primary infections:", risk_txt)
+   })
+
+   output$risk_plot <- renderPlot({
+      risk_matrix() |>
+         ggplot(aes(x = daytorain,
+                    y = raindays,
+                    fill = dm_risk),colour = "grey60")+
+         geom_tile()+
+         xlab("Days to next rain")+
+         ylab("Number of days with rain")+
+         theme_minimal()+
+         scale_x_continuous(breaks = 1:7,labels = 1:7)+
+         scale_y_continuous(breaks = 1:7,labels = 1:7)+
+         scale_fill_gradientn(colours = c("lightyellow","red"))
    })
 
 
