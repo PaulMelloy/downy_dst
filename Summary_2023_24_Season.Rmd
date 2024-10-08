@@ -220,5 +220,15 @@ downy_dates[primary_infection_stage == "INC_h_upper"][cohort < 55]
 
 
 
+## 2024 Season
 
+### Experimental design  
+
+
+
+### Spray applications
+
+ - 2024-09-04  Miravis  
+ - 2024-09-18  Captan  
+ - 2024-10-02  EcoCarb Sulphur mix  
 
