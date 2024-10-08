@@ -156,6 +156,7 @@ ui <- fluidPage(
                   has been applied, apply ASAP or Agriphos which can provide some curative activity."),
                   p("Red lines show zoospore likely infection events."),
                   p("You can use this plot to determine the approximate next dispersal event."),
+                  hr(),
                   ccs_style(1),
                   code(textOutput(outputId ="txtOosporeGerm" )),
                   p("The number of germinated oospore cohorts over the whole season.",
@@ -207,7 +208,11 @@ ui <- fluidPage(
                numericInput("forecast_rain","Forecast rain days in the next week",
                             min = 0, max = 7,value = 1),
                code(textOutput(outputId ="txtRisk")),
-               plotOutput("risk_plot")
+               hr(),
+               plotOutput("risk_plot"),
+               p("10 day forecast links:"),
+               p(a("Mt Tamborine (weather central)",
+                   href = "https://weather.com/weather/tenday/l/2e472c736b578bae5d2346dbed0e18eccb0659322363d0c5f834c9b5ed40cd68"))
 
       ) # end risk panel
    )# end risk panel
