@@ -332,8 +332,8 @@ server <- function(input, output) {
 
    output$weather_plot <- renderPlot({
       plot_weather(downy_model())+
-         ggplot2::xlim(input$weather_start,
-                       input$weather_end)
+         ggplot2::xlim(as.POSIXct(input$weather_start),
+                       as.POSIXct(input$weather_end))
    })
 
    # render plot of hydrothermal time
