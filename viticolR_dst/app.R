@@ -1,22 +1,40 @@
 # This is the non-live version, delete when copying
  # cp -TR "/home/pmelloy/downy_dst/viticolR_dst/" "/home/pmelloy/shiny-server/viticolR_dst/"
-if("/usr/lib/R/site-library" %in% .libPaths()){
-   .libPaths("/home/shared/lib/R/")}
-local_library <- switch(Sys.info()["nodename"],
-                        "PURPLE-DP" = "C:/Users/mel096/AppData/Local/R/win-library/4.4",
-                        "viticolr" = "/home/shared/lib/R/")
+# if("/usr/lib/R/site-library" %in% .libPaths()) {
+#    .libPaths("/home/shared/lib/R/")
+# }
+# local_library <- switch(Sys.info()["nodename"],
+#                         "PURPLE-DP" = "C:/Users/mel096/AppData/Local/R/win-library/4.4",
+#                         "viticolr" = "/home/shared/lib/R/")
 
-switch(Sys.info()["nodename"],
-       "PURPLE-DP" = load("C:/Users/mel096/OneDrive - CSIRO/Data/DM_dst_data.rda"),
-       "viticolr" = load("/home/shared/DM_dst_data.rda"))
+# switch(
+#    Sys.info()["nodename"],
+#    "PURPLE-DP" = load("C:/Users/mel096/OneDrive - CSIRO/Data/DM_dst_data.rda"),
+#    "viticolr" = load("/home/shared/DM_dst_data.rda")
+# )
+# Required CRAN packages
+packages <- c("remotes",
+              "shiny",
+              "data.table",
+              "shinythemes",
+              "ggplot2")
 
-#library(fastmap,lib.loc = "/homevol/pmelloy/R/x86_64-pc-linux-gnu-library/4.4")
-library(shiny,lib.loc = local_library)
-library(data.table,lib.loc = local_library)
-library(viticolaR,lib.loc = local_library)
-library(shinythemes,lib.loc = local_library)
-#library(DT)
-library(ggplot2,lib.loc = local_library)
+lapply(packages,function(p){
+   if(isFALSE(p %in% installed.packages()[,"Package"])){
+      install.packages(p,dependencies = TRUE)
+   }
+})
+
+if(isFALSE("viticolaR" %in% installed.packages()[, "Package"])) {
+   remotes::install_github("https://github.com/PaulMelloy/viticolaR",
+                           dependencies = TRUE,
+                           ref = "dev")
+}
+library(shiny)
+library(data.table)
+library(viticolaR)
+library(shinythemes)
+library(ggplot2)
 source("R/ccs_styles.R")
 source("R/est_dm_risk.R")
 
