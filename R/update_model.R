@@ -157,6 +157,8 @@ DMod_list <- lapply(names(DMod_list),function(loc){
 })
 
 names(DMod_list) <- tools::file_path_sans_ext(weather_files)
+
+cat("Copy and overwrite files, reply with a TRUE seven times\n")
 file.copy(from = list.files("/home/shared/",pattern = ".png", full.names = TRUE),
           to = "/home/pmelloy/shiny-server/viticolR_dst/www",
           overwrite = TRUE)
