@@ -34,9 +34,15 @@ imp_bomstation_data <- function(path,
    wdata$lon <- lon
    wdata$lat <- lat
 
+   if(missing(lon)) wdata$lon <- round(mean(wdata$lon),digits = 4)
+   if(missing(lat)) wdata$lat <- round(mean(wdata$lat),digits = 4)
+
+
    wdata[,aifstime_utc := as.POSIXct(as.character(aifstime_utc),
                                      format = "%Y%m%d%H%M%S",
                                      tz = "UTC")]
+
+   wdata <- wdata[order(aifstime_utc)]
 
 
    # create standard deviation of wind speed
@@ -69,11 +75,17 @@ imp_bomstation_data <- function(path,
    wdata <- epiphytoolR::impute_rh(wdata, rolling_window = rolling_window)
 
 
-   # due to the rolling imputation the last data will be NA. Remove this data``
-   if(nrow(wdata[is.na(temp) &
-                 is.na(rh)]) >=1){
-      wdata <- wdata[1:(which(is.na(temp) &
-                                 is.na(rh))[1]-1)]}
+   # due to the rolling imputation the first or last data could be be NA.
+   # and needs to be removed
+   na_data <- which(wdata[, is.na(temp) | is.na(rh)])
+   if(any(na_data < rolling_window)){
+      ex_below <- max(na_data[na_data < rolling_window])+1
+      wdata <- wdata[ex_below:nrow(wdata)]}
+
+   na_data <-  nrow(wdata) - which(wdata[, is.na(temp) | is.na(rh)])
+   if(any(na_data < rolling_window)){
+      ex_above <- nrow(wdata) - (max(na_data[na_data < rolling_window])+1)
+      wdata <- wdata[1:ex_above]}
 
    if(nrow(wdata[is.na(rain)]) >=1) {
       wdata[is.na(rain), rain := rainNA]
