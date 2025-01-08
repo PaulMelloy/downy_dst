@@ -54,30 +54,31 @@ imp_bomstation_data <- function(path,
 
    # for information on what the column headers relate to
    #  http://www.bom.gov.au/catalogue/Observations-XML.pdf
-   suppressWarnings(
-      wdata <-
-         epiphytoolR::format_weather(
-            wdata,
-            POSIXct_time = "aifstime_utc",
-            time_zone = "UTC",
-            temp = "air_temp",
-            rain = "rain_ten",
-            rh = "rel_hum",
-            ws = "wind_spd_kmh",
-            wd = "wind_dir_deg",
-            station = "name",
-            lon = "lon",
-            lat = "lat",
-            data_check = FALSE))
+   wdata <-
+      epiphytoolR::format_weather(
+         wdata,
+         POSIXct_time = "aifstime_utc",
+         time_zone = "UTC",
+         temp = "air_temp",
+         rain = "rain_ten",
+         rh = "rel_hum",
+         ws = "wind_spd_kmh",
+         wd = "wind_dir_deg",
+         station = "name",
+         lon = "lon",
+         lat = "lat",
+         impute_nas = c("temp","rh"),
+         Irolling_window = rolling_window)
 
-   # impute temperature and humidity
-   wdata <- epiphytoolR::impute_temp(wdata, rolling_window = rolling_window)
-   wdata <- epiphytoolR::impute_rh(wdata, rolling_window = rolling_window)
+   # # impute temperature and humidity
+   # wdata <- epiphytoolR::impute_temp(wdata, rolling_window = rolling_window)
+   # wdata <- epiphytoolR::impute_rh(wdata, rolling_window = rolling_window)
 
 
    # due to the rolling imputation the first or last data could be be NA.
    # and needs to be removed
    na_data <- which(wdata[, is.na(temp) | is.na(rh)])
+   message(length(na_data)," lines with NA temp or rh data")
    if(any(na_data < rolling_window)){
       ex_below <- max(na_data[na_data < rolling_window])+1
       wdata <- wdata[ex_below:nrow(wdata)]}

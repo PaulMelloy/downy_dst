@@ -14,7 +14,7 @@ if("viticolaR" %in% installed.packages()[,"Package"] == FALSE){
                            dependencies = TRUE)
 }
 
-working_dir <- path.expand("~/") # default to users home directory
+working_dir <- path.expand("~") # default to users home directory
 
 library(data.table)
 library(here)
@@ -26,18 +26,18 @@ source(here("R/imp_bomstation_data.R"))
 
 ## ----------------------            Settings            ----------------------
 # Machine specific setup
-source(here("R/run_on_pepper.R"))
-dl_path <- file.path(working_dir,"Documents/weather/tgz/")
-weather_path <- file.path(working_dir,"Documents/weather/")
-plots_path <- "/home/shared"
-shiny_img_path <- "/home/paul/R/downy_dst/viticolR_dst/www"
+#source(here("R/run_on_pepper.R"))
+#dl_path <- file.path(working_dir,"weather_data/tgz/")
+weather_path <- file.path(working_dir,"weather_data")
+plots_path <- file.path(working_dir,"../shared")
+shiny_img_path <- here("viticolR_dst/www")
 
 
 ## ---------------                System checks                ----------------
 if(dir.exists(weather_path) == FALSE)
    stop("Path to weather data", weather_path, "does not exist")
-if (dir.exists(dl_path) == FALSE)
-   stop("Path to archived weather data", dl_path, "does not exist")
+# if (dir.exists(dl_path) == FALSE)
+#    stop("Path to archived weather data", dl_path, "does not exist")
 if (dir.exists(plots_path) == FALSE)
    stop("Path to save model plots", plots_path, "does not exist")
 if (dir.exists(shiny_img_path) == FALSE)
@@ -132,12 +132,12 @@ names(DMod_list) <- tools::file_path_sans_ext(weather_files)
 file.copy(from = list.files(plots_path,
                             pattern = ".png",
                             full.names = TRUE),
-          to = "/home/pmelloy/shiny-server/viticolR_dst/www",
+          to = shiny_img_path,
           overwrite = TRUE)
 
 save(DMod_list,
      weather_list,
-     file = paste0("/home/shared/","DM_dst_data.rda"))
+     file = file.path(working_dir,"../shared/","DM_dst_data.rda"))
 
 
 
