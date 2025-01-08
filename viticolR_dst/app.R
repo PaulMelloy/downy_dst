@@ -1,18 +1,9 @@
-# This is the non-live version, delete when copying
- # cp -TR "/home/pmelloy/downy_dst/viticolR_dst/" "/home/pmelloy/shiny-server/viticolR_dst/"
-# if("/usr/lib/R/site-library" %in% .libPaths()) {
-#    .libPaths("/home/shared/lib/R/")
-# }
-# local_library <- switch(Sys.info()["nodename"],
-#                         "PURPLE-DP" = "C:/Users/mel096/AppData/Local/R/win-library/4.4",
-#                         "viticolr" = "/home/shared/lib/R/")
-
-# switch(
-#    Sys.info()["nodename"],
-#    "PURPLE-DP" = load("C:/Users/mel096/OneDrive - CSIRO/Data/DM_dst_data.rda"),
-#    "viticolr" = load("/home/shared/DM_dst_data.rda")
-# )
+# # This is the non-live version, delete when copying
+# system2(command = "cp",
+#         args =  c("-TR","/homevol/pmelloy/downy_dst/viticolR_dst/", "/homevol/pmelloy/shiny-server/viticolR_dst/"))
 # Required CRAN packages
+#set R library to a shared folder
+Sys.setenv(R_LIBS_USER = "/homevol/shared/rlibs")
 packages <- c("remotes",
               "shiny",
               "data.table",
@@ -21,15 +12,22 @@ packages <- c("remotes",
 
 lapply(packages,function(p){
    if(isFALSE(p %in% installed.packages()[,"Package"])){
-      install.packages(p,dependencies = TRUE)
+      install.packages(p,dependencies = TRUE,)
    }
 })
+
+if(isFALSE("epiphytoolR" %in% installed.packages()[, "Package"])) {
+   remotes::install_github("https://github.com/PaulMelloy/epiphytoolR",
+                           dependencies = TRUE,
+                           ref = "fill_weather",upgrade = "always")
+   }
 
 if(isFALSE("viticolaR" %in% installed.packages()[, "Package"])) {
    remotes::install_github("https://github.com/PaulMelloy/viticolaR",
                            dependencies = TRUE,
-                           ref = "dev")
+                           ref = "dev",upgrade = "always")
 }
+
 library(shiny)
 library(data.table)
 library(viticolaR)
