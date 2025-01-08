@@ -1,12 +1,19 @@
 ## ----------------------        Install packages        ----------------------
-if("remotes" %in% installed.packages()[,"Package"] == FALSE){
-   install.packages("remotes", dependencies = TRUE)
-}
+pkgs <- c("remotes",
+          "data.table",
+          "here",
+          "ggplot2")
+lapply(pkgs, function(p){
+   if("p" %in% installed.packages()[,"Package"] == FALSE){
+      install.packages("p", dependencies = TRUE)
+   }
+})
+
 if("data.table" %in% installed.packages()[,"Package"] == FALSE){
    install.packages("data.table",dependencies = TRUE)
 }
 if("epiphytoolR" %in% installed.packages()[,"Package"] == FALSE){
-   remotes::install_github("PaulMelloy/epiphytoolR", ref = "dev",
+   remotes::install_github("PaulMelloy/epiphytoolR", ref = "fill_weather",
                            dependencies = TRUE)
 }
 if("viticolaR" %in% installed.packages()[,"Package"] == FALSE){

@@ -9,3 +9,6 @@ mkdir shared/rlibs
 sudo chmod -R 765 /home/shared
 echo R_LIBS_USER="/homevol/shared/rlibs" >> /etc/environment
 echo R_LIBS_USER="/homevol/shared/rlibs" >> ~/.Renviron
+
+# add dependancies for 'systemfonts'
+sudo apt install libfreetype6-dev libfontconfig1-dev
