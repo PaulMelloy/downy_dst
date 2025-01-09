@@ -31,11 +31,20 @@ imp_bomstation_data <- function(path,
    if(length(unique(wdata$name))> 1) stop("Two weather station names exist in weather
                                          file. Please remove data from one of the stations")
 
-   wdata$lon <- lon
-   wdata$lat <- lat
+   message("\nProcessing ",unique(wdata$name))
 
-   if(missing(lon)) wdata$lon <- round(mean(wdata$lon),digits = 4)
-   if(missing(lat)) wdata$lat <- round(mean(wdata$lat),digits = 4)
+   if(missing(lon)){
+      lon <- round(mean(wdata$lon),digits = 4)
+      wdata$lon <- lon
+   }else{
+      wdata$lon <- lon
+   }
+   if(missing(lat)){
+      lat <- round(mean(wdata$lat),digits = 4)
+      wdata$lat <- lat
+   }else{
+      wdata$lat <- lat
+      }
 
 
    wdata[,aifstime_utc := as.POSIXct(as.character(aifstime_utc),
@@ -43,6 +52,47 @@ imp_bomstation_data <- function(path,
                                      tz = "UTC")]
 
    wdata <- wdata[order(aifstime_utc)]
+
+   # Check for error entries
+   wdata[rain_ten < 0, rain_ten := 0]
+
+   tm_out <- which(wdata$air_temp < -30 |
+                      wdata$air_temp > 60)
+   wdata[tm_out,air_temp := NA_real_]
+   wdata[tm_out, air_temp := frollmean(air_temp,
+                                       n = 5,
+                                       align = "center",
+                                       na.rm = TRUE)]
+
+   rh_out <- which(wdata$rel_hum < 0 |
+                      wdata$rel_hum > 100)
+   wdata[rh_out,rel_hum := NA_real_]
+   wdata[rh_out, rel_hum := frollmean(rel_hum,
+                                      n = 5,
+                                      align = "center",
+                                      na.rm = TRUE)]
+
+   ws_out <- which(wdata$wind_spd_kmh < 0 |
+                      wdata$wind_spd_kmh > 150)
+   wdata[ws_out, wind_spd_kmh := NA_real_]
+   wdata[ws_out, wind_spd_kmh := frollmean(wind_spd_kmh,
+                                           n = 5,
+                                           align = "center",
+                                           na.rm = TRUE)]
+
+   wd_out <- which(wdata$wind_dir_deg < 0 |
+                      wdata$wind_dir_deg > 360)
+   wdata[wd_out, wind_dir_deg := NA_real_]
+   circle_mean <- function(x){
+      as.numeric(circular::mean.circular(
+         circular::circular(x,
+                            units = "degrees",
+                            modulo = "2pi"),
+         na.rm = TRUE))}
+   wdata[wd_out, wind_dir_deg := frollapply(wind_dir_deg,
+                                            n = 3,
+                                            FUN = circle_mean,
+                                            align = "center")]
 
 
    # create standard deviation of wind speed
@@ -68,7 +118,8 @@ imp_bomstation_data <- function(path,
          lon = "lon",
          lat = "lat",
          impute_nas = c("temp","rh"),
-         Irolling_window = rolling_window)
+         Irolling_window = rolling_window,
+         data_check = FALSE)
 
    # # impute temperature and humidity
    # wdata <- epiphytoolR::impute_temp(wdata, rolling_window = rolling_window)

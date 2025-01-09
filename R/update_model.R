@@ -1,12 +1,19 @@
 ## ----------------------        Install packages        ----------------------
-if("remotes" %in% installed.packages()[,"Package"] == FALSE){
-   install.packages("remotes", dependencies = TRUE)
-}
+pkgs <- c("remotes",
+          "data.table",
+          "here",
+          "ggplot2")
+lapply(pkgs, function(p){
+   if(p %in% installed.packages()[,"Package"] == FALSE){
+      install.packages(p, dependencies = TRUE)
+   }
+})
+
 if("data.table" %in% installed.packages()[,"Package"] == FALSE){
    install.packages("data.table",dependencies = TRUE)
 }
 if("epiphytoolR" %in% installed.packages()[,"Package"] == FALSE){
-   remotes::install_github("PaulMelloy/epiphytoolR", ref = "dev",
+   remotes::install_github("PaulMelloy/epiphytoolR", ref = "fill_weather",
                            dependencies = TRUE)
 }
 if("viticolaR" %in% installed.packages()[,"Package"] == FALSE){
@@ -21,13 +28,13 @@ library(here)
 library(ggplot2)
 library(epiphytoolR)
 library(viticolaR)
-source(here("R/imp_bomstation_data.R"))
+source(here("R/imp_bomstation_data.R"),verbose = TRUE)
 
 
 ## ----------------------            Settings            ----------------------
 # Machine specific setup
 #source(here("R/run_on_pepper.R"))
-#dl_path <- file.path(working_dir,"weather_data/tgz/")
+dl_path <- file.path(working_dir,"weather_data/tgz/")
 weather_path <- file.path(working_dir,"weather_data")
 plots_path <- file.path(working_dir,"../shared")
 shiny_img_path <- here("viticolR_dst/www")
