@@ -12,7 +12,7 @@ packages <- c("remotes",
 
 lapply(packages,function(p){
    if(isFALSE(p %in% installed.packages()[,"Package"])){
-      install.packages(p,dependencies = TRUE,)
+      install.packages(p,dependencies = TRUE)
    }
 })
 
