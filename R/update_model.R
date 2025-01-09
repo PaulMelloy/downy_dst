@@ -4,8 +4,8 @@ pkgs <- c("remotes",
           "here",
           "ggplot2")
 lapply(pkgs, function(p){
-   if("p" %in% installed.packages()[,"Package"] == FALSE){
-      install.packages("p", dependencies = TRUE)
+   if(p %in% installed.packages()[,"Package"] == FALSE){
+      install.packages(p, dependencies = TRUE)
    }
 })
 
@@ -34,7 +34,7 @@ source(here("R/imp_bomstation_data.R"))
 ## ----------------------            Settings            ----------------------
 # Machine specific setup
 #source(here("R/run_on_pepper.R"))
-#dl_path <- file.path(working_dir,"weather_data/tgz/")
+dl_path <- file.path(working_dir,"weather_data/tgz/")
 weather_path <- file.path(working_dir,"weather_data")
 plots_path <- file.path(working_dir,"../shared")
 shiny_img_path <- here("viticolR_dst/www")
