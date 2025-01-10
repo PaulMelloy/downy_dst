@@ -129,6 +129,13 @@ ui <- fluidPage(
                                        "Walpuep Research station (VIC)")),
                dateInput("BudBurst", "Date of Bud burst",value = paste0(year(Sys.Date()),"-08-25")),
                hr(),
+               h4("Weather observations"),
+               dateInput("weather_start",
+                         "Weather plot start date",
+                         value = paste0(year(Sys.Date()),"-08-01")),
+               dateInput("weather_end",
+                         "Weather plot end date",
+                         value = Sys.Date()-1),
                plotOutput("weather_plot"),
                hr(),
                h4("Downy mildew infection process:"),
@@ -337,7 +344,9 @@ server <- function(input, output) {
                                     Time = as.character(hour))])
 
    output$weather_plot <- renderPlot({
-      plot_weather(downy_model())
+      plot_weather(downy_model())+
+         ggplot2::xlim(as.POSIXct(input$weather_start),
+                       as.POSIXct(input$weather_end))
    })
 
    # render plot of hydrothermal time

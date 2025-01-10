@@ -136,6 +136,8 @@ DMod_list <- lapply(names(DMod_list),function(loc){
 
 ## -----------------            Save all outputs            -------------------
 names(DMod_list) <- tools::file_path_sans_ext(weather_files)
+
+cat("Copy and overwrite files, reply with a TRUE seven times\n")
 file.copy(from = list.files(plots_path,
                             pattern = ".png",
                             full.names = TRUE),
