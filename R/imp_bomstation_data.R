@@ -31,12 +31,68 @@ imp_bomstation_data <- function(path,
    if(length(unique(wdata$name))> 1) stop("Two weather station names exist in weather
                                          file. Please remove data from one of the stations")
 
-   wdata$lon <- lon
-   wdata$lat <- lat
+   message("\nProcessing ",unique(wdata$name))
+
+   if(missing(lon)){
+      lon <- round(mean(wdata$lon),digits = 4)
+      wdata$lon <- lon
+   }else{
+      wdata$lon <- lon
+   }
+   if(missing(lat)){
+      lat <- round(mean(wdata$lat),digits = 4)
+      wdata$lat <- lat
+   }else{
+      wdata$lat <- lat
+      }
+
 
    wdata[,aifstime_utc := as.POSIXct(as.character(aifstime_utc),
                                      format = "%Y%m%d%H%M%S",
                                      tz = "UTC")]
+
+   wdata <- wdata[order(aifstime_utc)]
+
+   # Check for error entries
+   wdata[rain_ten < 0, rain_ten := 0]
+
+   tm_out <- which(wdata$air_temp < -30 |
+                      wdata$air_temp > 60)
+   wdata[tm_out,air_temp := NA_real_]
+   wdata[tm_out, air_temp := frollmean(air_temp,
+                                       n = 5,
+                                       align = "center",
+                                       na.rm = TRUE)]
+
+   rh_out <- which(wdata$rel_hum < 0 |
+                      wdata$rel_hum > 100)
+   wdata[rh_out,rel_hum := NA_real_]
+   wdata[rh_out, rel_hum := frollmean(rel_hum,
+                                      n = 5,
+                                      align = "center",
+                                      na.rm = TRUE)]
+
+   ws_out <- which(wdata$wind_spd_kmh < 0 |
+                      wdata$wind_spd_kmh > 150)
+   wdata[ws_out, wind_spd_kmh := NA_real_]
+   wdata[ws_out, wind_spd_kmh := frollmean(wind_spd_kmh,
+                                           n = 5,
+                                           align = "center",
+                                           na.rm = TRUE)]
+
+   wd_out <- which(wdata$wind_dir_deg < 0 |
+                      wdata$wind_dir_deg > 360)
+   wdata[wd_out, wind_dir_deg := NA_real_]
+   circle_mean <- function(x){
+      as.numeric(circular::mean.circular(
+         circular::circular(x,
+                            units = "degrees",
+                            modulo = "2pi"),
+         na.rm = TRUE))}
+   wdata[wd_out, wind_dir_deg := frollapply(wind_dir_deg,
+                                            n = 3,
+                                            FUN = circle_mean,
+                                            align = "center")]
 
 
    # create standard deviation of wind speed
@@ -48,32 +104,40 @@ imp_bomstation_data <- function(path,
 
    # for information on what the column headers relate to
    #  http://www.bom.gov.au/catalogue/Observations-XML.pdf
-   suppressWarnings(
-      wdata <-
-         epiphytoolR::format_weather(
-            wdata,
-            POSIXct_time = "aifstime_utc",
-            time_zone = "UTC",
-            temp = "air_temp",
-            rain = "rain_ten",
-            rh = "rel_hum",
-            ws = "wind_spd_kmh",
-            wd = "wind_dir_deg",
-            station = "name",
-            lon = "lon",
-            lat = "lat",
-            data_check = FALSE))
+   wdata <-
+      epiphytoolR::format_weather(
+         wdata,
+         POSIXct_time = "aifstime_utc",
+         time_zone = "UTC",
+         temp = "air_temp",
+         rain = "rain_ten",
+         rh = "rel_hum",
+         ws = "wind_spd_kmh",
+         wd = "wind_dir_deg",
+         station = "name",
+         lon = "lon",
+         lat = "lat",
+         impute_nas = c("temp","rh"),
+         Irolling_window = rolling_window,
+         data_check = FALSE)
 
-   # impute temperature and humidity
-   wdata <- epiphytoolR::impute_temp(wdata, rolling_window = rolling_window)
-   wdata <- epiphytoolR::impute_rh(wdata, rolling_window = rolling_window)
+   # # impute temperature and humidity
+   # wdata <- epiphytoolR::impute_temp(wdata, rolling_window = rolling_window)
+   # wdata <- epiphytoolR::impute_rh(wdata, rolling_window = rolling_window)
 
 
-   # due to the rolling imputation the last data will be NA. Remove this data``
-   if(nrow(wdata[is.na(temp) &
-                 is.na(rh)]) >=1){
-      wdata <- wdata[1:(which(is.na(temp) &
-                                 is.na(rh))[1]-1)]}
+   # due to the rolling imputation the first or last data could be be NA.
+   # and needs to be removed
+   na_data <- which(wdata[, is.na(temp) | is.na(rh)])
+   message(length(na_data)," lines with NA temp or rh data")
+   if(any(na_data < rolling_window)){
+      ex_below <- max(na_data[na_data < rolling_window])+1
+      wdata <- wdata[ex_below:nrow(wdata)]}
+
+   na_data <-  nrow(wdata) - which(wdata[, is.na(temp) | is.na(rh)])
+   if(any(na_data < rolling_window)){
+      ex_above <- nrow(wdata) - (max(na_data[na_data < rolling_window])+1)
+      wdata <- wdata[1:ex_above]}
 
    if(nrow(wdata[is.na(rain)]) >=1) {
       wdata[is.na(rain), rain := rainNA]
