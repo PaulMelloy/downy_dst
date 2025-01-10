@@ -1,6 +1,6 @@
-# # This is the non-live version, delete when copying
-system2(command = "cp",
-        args =  c("-TR","/homevol/pmelloy/downy_dst/viticolR_dst/", "/homevol/pmelloy/shiny-server/viticolR_dst/"))
+# # Copy non-live version to live version, delete when copying
+# system2(command = "cp",
+#         args =  c("-TR","/homevol/pmelloy/downy_dst/viticolR_dst/", "/homevol/pmelloy/shiny-server/viticolR_dst/"))
 # Required CRAN packages
 #set R library to a shared folder
 Sys.setenv(R_LIBS_USER = "/homevol/shared/rlibs")
@@ -36,12 +36,13 @@ library(ggplot2)
 source("R/ccs_styles.R")
 source("R/est_dm_risk.R")
 
-load("/homevol/shared/DM_dst_data.rda")
-
 # Load the last model run
+switch(Sys.info()["nodename"],
+       agroecology = load("/homevol/shared/DM_dst_data.rda"),
+       pepper = load("/home/shared/DM_dst_data.rda"))
+
 
 # assign default model as North Tamborine
-#DMod <- DMod_NT
 DMod <- DMod_list[["23-24_NTamborine"]]
 
 plot_width <- ifelse(length(DMod$time_hours) < 1000,
@@ -52,11 +53,6 @@ plot_width <- ifelse(length(DMod$time_hours) < 1000,
 ui <- fluidPage(
    # # Styling
    theme = shinytheme("superhero"),
-   # tags$head(tags$style("{color: white;
-   #                               font-size: 20px;
-   #                               font-style: italic;
-   #                               }")
-   #           ),
    tags$style('.container-fluid {
               background-color: #25052e;}'),
    tags$style('.navbar-default {
