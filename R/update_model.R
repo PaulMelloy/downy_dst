@@ -28,7 +28,7 @@ library(here)
 library(ggplot2)
 library(epiphytoolR)
 library(viticolaR)
-source(here("R/imp_bomstation_data.R"),verbose = TRUE)
+source(here("R/imp_bomstation_data.R"))
 
 
 ## ----------------------            Settings            ----------------------

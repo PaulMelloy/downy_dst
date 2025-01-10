@@ -1,6 +1,6 @@
 # # This is the non-live version, delete when copying
-# system2(command = "cp",
-#         args =  c("-TR","/homevol/pmelloy/downy_dst/viticolR_dst/", "/homevol/pmelloy/shiny-server/viticolR_dst/"))
+system2(command = "cp",
+        args =  c("-TR","/homevol/pmelloy/downy_dst/viticolR_dst/", "/homevol/pmelloy/shiny-server/viticolR_dst/"))
 # Required CRAN packages
 #set R library to a shared folder
 Sys.setenv(R_LIBS_USER = "/homevol/shared/rlibs")
@@ -36,11 +36,8 @@ library(ggplot2)
 source("R/ccs_styles.R")
 source("R/est_dm_risk.R")
 
-# if(Sys.info()["nodename"] == "viticola"){
-#    load("/home/pmelloy/R/x86_64-pc-linux-gnu-library/4.4")
-# }else{
-#    load("C:/R/downy_dst/data/DM_dst_data.rda")
-# }
+load("/homevol/shared/DM_dst_data.rda")
+
 # Load the last model run
 
 # assign default model as North Tamborine
