@@ -128,7 +128,7 @@ ui <- fluidPage(
                h4("Weather observations"),
                dateInput("weather_start",
                          "Weather plot start date",
-                         value = paste0(year(Sys.Date()),"-08-01")),
+                         value = Sys.Date()-21),
                dateInput("weather_end",
                          "Weather plot end date",
                          value = Sys.Date()-1),
@@ -340,9 +340,11 @@ server <- function(input, output) {
                                     Time = as.character(hour))])
 
    output$weather_plot <- renderPlot({
-      plot_weather(downy_model())+
-         ggplot2::xlim(as.POSIXct(input$weather_start),
-                       as.POSIXct(input$weather_end))
+      cat(as.character(input$weather_start))
+      plot_weather(downy_model(),
+                   rolling_window = 4,
+                   date_min = "2024-08-01",
+                   date_max = "2025-01-01")
    })
 
    # render plot of hydrothermal time
