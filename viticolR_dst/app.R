@@ -137,12 +137,15 @@ ui <- fluidPage(
                                        "Mildura Airport (VIC)",
                                        "Loxton Research station (SA)",
                                        "Walpuep Research station (VIC)")),
+               p(a("Submit an issue on github",
+                        href="https://github.com/PaulMelloy/downy_dst/issues/new/choose"),
+                      " to request the addition of an extra BOM AWS weather station"),
                dateInput("BudBurst", "Date of Bud burst",value = paste0(year(Sys.Date()),"-08-25")),
                hr(),
                h4("Weather observations"),
                dateInput("weather_start",
                          "Weather plot start date",
-                         value = paste0(year(Sys.Date()),"-08-01")),
+                         value = Sys.Date()-21),
                dateInput("weather_end",
                          "Weather plot end date",
                          value = Sys.Date()-1),
@@ -171,6 +174,24 @@ ui <- fluidPage(
       tabPanel("Seasonal progress",
                h2("Seasonal progress of residual oospores germinating"),
                h3(textOutput(outputId = "last_mod_time")),
+               p("According to ",
+                 a("Rossi et al. (2007)",
+                   href = "https://onlinelibrary.wiley.com/doi/abs/10.1111/j.1365-3059.2007.01738.x"),
+                 "The germination of oospores, the overwintering downy mildew inoculum,
+                 is best explained by Gompertz's equation published in the book
+                 'Introduction to Plant Disease' by Campbell and Madden (1990).",
+                 "Gompertz's equation uses 'Hydrothermal time', a compbination of
+                 temperature, rainfall and vapour pressure deficiet (VPD) to estimate
+                 conditions in the the soil-leaf layer that would lead to the
+                 germination of oospores into sporangia.",
+                 "Here we calculate hydrothermal time from 10 days after the winter
+                 solstace.",
+                 "Approximately 3% and 97% of oospores are estimated to have
+                 germinated at hydrothermal time of 1.3 and 8.6 respectivley.",
+                 "This is shown by the blue shading on the graph below.",
+                 "When hydrothermal time is outside this range there is a low
+                 probability of downy mildew infection from primary innoculum
+                 sources."),
                plotOutput("HT_Plot")),
       #------------------------------------------------------------------------
       tabPanel("Primary dispersals",
@@ -354,9 +375,11 @@ server <- function(input, output) {
                                     Time = as.character(hour))])
 
    output$weather_plot <- renderPlot({
-      plot_weather(downy_model())+
-         ggplot2::xlim(as.POSIXct(input$weather_start),
-                       as.POSIXct(input$weather_end))
+      cat(as.character(input$weather_start))
+      plot_weather(downy_model(),
+                   rolling_window = 4,
+                   date_min = "2024-08-01",
+                   date_max = "2025-01-01")
    })
 
    # render plot of hydrothermal time
