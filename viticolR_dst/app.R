@@ -51,7 +51,7 @@ plot_width <- ifelse(length(DMod$time_hours) < 1000,
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(
-   tags$head(HTML(includeScript("./viticolR_analytics.js"))),
+   tags$head(includeScript("./viticolR_analytics.js")),
    # # Styling
    theme = shinytheme("superhero"),
    tags$style('.container-fluid {
