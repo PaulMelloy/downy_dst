@@ -63,8 +63,7 @@ ui <- fluidPage(
          var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];
          g.async=true; g.src='https://cdn.matomo.cloud/melloy.matomo.cloud/matomo.js'; s.parentNode.insertBefore(g,s);
       })();"
-
-   ))))
+      ))),
    # # Styling
    theme = shinytheme("superhero"),
    tags$style('.container-fluid {
