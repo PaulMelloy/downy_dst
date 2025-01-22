@@ -10,7 +10,7 @@ Import R librarys and weather data.
 library(data.table)
 library(viticolaR)
 library(epiphytoolR)
-library(weatherOz,lib.loc = 'C:/Users/mel096/AppData/Local/R/win-library/4.4')
+library(weatherOz)
 library(ggplot2)
 library(nasapower)
 
@@ -73,7 +73,8 @@ ntw_c <- format_weather(ntw,
                         lon = "lon",
                         lat = "lat",
                         data_check = FALSE,
-                        muffle_warnings = TRUE
+                        impute_nas = NULL,
+                        verbose = TRUE
                         )
 ```
 
@@ -81,6 +82,13 @@ This data has gaps Lets inspect the coverage
 
 ```{r}
 ntw_c[is.na(rain)]
+
+# retrieve missing timeframes
+na_range <- ntw_c[is.na(rain) |
+                     is.na(temp) |
+                     is.na(rh) |
+                     is.na(wd) |
+                     is.na(ws), times]
 ```
 
 
@@ -99,28 +107,65 @@ nasa_w[,times := as.POSIXct(paste0(YEAR,"-",MO,"-",DY," ",HR,":00:00"))]
 ```
 
 
+Get openweather weather data to patch NA data
+
+```{r}
+open_weather <-
+   weather_history(
+      location = c(ntw_c$lat[1], ntw_c$lon[1]),
+      start = as.Date(min(na_range)),
+      end = as.Date(max(na_range)),
+      hourly = c(
+         "rain",
+         "temperature_2m",
+         "relative_humidity_2m",
+         "wind_direction_10m",
+         "wind_speed_10m"
+      ),
+      timezone = "UTC"
+   )
+setnames(open_weather,
+         old = c("datetime"),
+         new = "times")
+```
+
+
 merge weather data
 
 ```{r}
-ntw_c <- merge.data.table(ntw_c,nasa_w,by = "times")
+# merge tables
+ntw_o <- merge.data.table(ntw_c,open_weather,by = "times",all.x = TRUE)
+#overwrite missing data
+ntw_o[is.na(temp),temp := hourly_temperature_2m]
+ntw_o[is.na(rh),rh := hourly_relative_humidity_2m]
+ntw_o[is.na(rain),rain := hourly_rain]
+ntw_o[is.na(wd),wd := hourly_wind_direction_10m]
+ntw_o[is.na(ws),ws := hourly_wind_speed_10m]
+fwrite(ntw_o,file = "cache/23-24_weatherdata_ometfill.csv")
+```
 
-ntw_c[is.na(temp),temp := T2M]
-ntw_c[is.na(rh),rh := RH2M]
-ntw_c[is.na(rain),rain := PRECTOTCORR]
 
 
-fwrite(ntw_c,file = "cache/23-24_weatherdata.csv")
+```{r}
+# ntw_c <- merge.data.table(ntw_c,nasa_w,by = "times")
+# 
+# ntw_c[is.na(temp),temp := T2M]
+# ntw_c[is.na(rh),rh := RH2M]
+# ntw_c[is.na(rain),rain := PRECTOTCORR]
+# 
+# 
+# fwrite(ntw_c,file = "cache/23-24_weatherdata.csv")
 ```
 
 
 ```{r}
-if(missing(ntw_c)) ntw_c <- fread("cache/23-24_weatherdata.csv")
+# if(missing(ntw_c)) ntw_c <- fread("cache/23-24_weatherdata.csv")
 ```
 
 ### Run model  
 
 ```{r}
-mod_dm <- viticolaR::estimate_DM_PI(ntw_c,Start = as.POSIXct("2023-07-01"))
+mod_dm <- viticolaR::estimate_DM_PI(ntw_o,Start = as.POSIXct("2023-07-01"))
 downy_dates <- get_PI_dates(mod_dm)
 ```
 
@@ -191,17 +236,19 @@ SPO_plot <-
          theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
 SPO_plot
-ggsave(filename = "cache/SPO_plot.png",
-       plot = SPO_plot,
-       width = 3000,height = 500, units = "px", dpi = 90)
+# ggsave(filename = "cache/SPO_plot.png",
+#        plot = SPO_plot,
+#        width = 3000,height = 500, units = "px", dpi = 90)
 ```
 
 
 
 
 ```{r}
-downy_dates <- fread("cache/PI_dates.csv")
-# downy_dates <- get_PI_dates(mod_dm)
+#downy_dates <- fread("cache/PI_dates.csv")
+downy_dates <- viticolaR::get_PI_dates(mod_dm) 
+downy_dates[]
+
 ```
 
 Not sure why get_PI_dates is  not working saved data.table and can read back in.  
