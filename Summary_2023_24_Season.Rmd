@@ -266,6 +266,16 @@ downy_dates[primary_infection_stage == "INC_h_upper"][cohort < 55]
 ```
 
 
+### Temperature logger data
+
+import temperature logger data
+
+```{r}
+
+```
+
+
+
 
 ## 2024 Season
 
