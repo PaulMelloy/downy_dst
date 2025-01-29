@@ -4,7 +4,7 @@ library(epiphytoolR)
 library(ggplot2)
 
 # read in Mt tamborine data
-tam <- fread("P:/Weather/23-24_NTamborine.csv")
+tam <- fread("data/23-24_NTamborine.csv")
 tam[, datetime := as.POSIXct(as.character(aifstime_utc), format = "%Y%m%d%H%M%S")]
 tam[, lon := mean(lon)]
 tam[, lat := mean(lat)]
@@ -23,14 +23,15 @@ tamf <-
                station = "name",
                lon = "lon",
                lat = "lat",
-               data_check = FALSE
+               data_check = c("temp","rain","rh"),
+               impute_nas = FALSE
 )
 
 
-
+if(isFALSE(file.exists("data/23-25_openmet_tamborine.csv"))){
 tamo <- weather_history(c(-27.9396, 153.1914),
-                        "2024-06-01",
-                        "2025-01-13",
+                        "2023-06-01",
+                        "2025-01-20",
                         hourly = c("temperature_2m",
                                    "relative_humidity_2m",
                                    "cloud_cover",
@@ -48,13 +49,16 @@ tamo <- weather_history(c(-27.9396, 153.1914),
                         timezone = "UTC")
 
 setDT(tamo)
+fwrite(tamo, "data/23-25_openmet_tamborine.csv")}else{
+   tamo <-fread("data/23-25_openmet_tamborine.csv")
+}
 
 tamf[, datetime := times + (60*60*10)]
 
-tamo <- tamo[tamf, on = "datetime"]
+tamof <- tamf[tamo, on = "datetime"]
 
-tamo[times > as.POSIXct("2024-12-01") & times < as.POSIXct("2024-12-31")] |>
-   ggplot(aes(x = datetime, y = hourly_temperature_2m )) +
-   geom_line() +
-   geom_line(aes(y = temp), colour = "blue")
-
+# tamof[times > as.POSIXct("2023-12-01") & times < as.POSIXct("2023-12-31")] |>
+#    ggplot(aes(x = datetime, y = hourly_temperature_2m )) +
+#    geom_line() +
+#    geom_line(aes(y = temp), colour = "blue")
+#
