@@ -1,0 +1,48 @@
+---
+title: "DownyDST"
+author: "Paul Melloy"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r install_libraries}
+packages <- c("remotes",
+              "data.table",
+              "ggplot2")
+
+lapply(packages,function(p){
+   if(isFALSE(p %in% installed.packages()[,"Package"])){
+      install.packages(p,dependencies = TRUE)
+   }
+})
+
+if(isFALSE("epiphytoolR" %in% installed.packages()[, "Package"])) {
+   remotes::install_github("https://github.com/PaulMelloy/epiphytoolR",
+                           dependencies = TRUE,
+                           ref = "fill_weather",upgrade = "always")
+   }
+
+if(isFALSE("viticolR" %in% installed.packages()[, "Package"])) {
+   remotes::install_github("https://github.com/PaulMelloy/viticolaR",
+                           dependencies = TRUE,
+                           ref = "dev",upgrade = "always")
+}
+
+library(shiny)
+library(data.table)
+library(viticolaR)
+library(shinythemes)
+library(ggplot2)
+source("R/ccs_styles.R")
+source("R/est_dm_risk.R")
+
+# Load the last model run
+switch(Sys.info()["nodename"],
+       agroecology = load("/homevol/shared/DM_dst_data.rda"),
+       pepper = load("/home/shared/DM_dst_data.rda"))
+
+
+# assign default model as North Tamborine
+DMod <- DMod_list[["23-24_NTamborine"]]
+```
+
