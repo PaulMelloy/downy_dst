@@ -22,15 +22,15 @@ if(isFALSE("epiphytoolR" %in% installed.packages()[, "Package"])) {
                            ref = "fill_weather",upgrade = "always")
    }
 
-if(isFALSE("viticolaR" %in% installed.packages()[, "Package"])) {
-   remotes::install_github("https://github.com/PaulMelloy/viticolaR",
+if(isFALSE("viticolR" %in% installed.packages()[, "Package"])) {
+   remotes::install_github("https://github.com/PaulMelloy/viticolR",
                            dependencies = TRUE,
                            ref = "dev",upgrade = "always")
 }
 
 library(shiny)
 library(data.table)
-library(viticolaR)
+library(viticolR)
 library(shinythemes)
 library(ggplot2)
 source("R/ccs_styles.R")
@@ -313,7 +313,7 @@ server <- function(input, output) {
 
    # Format model output into a data.table of dates for each stage
    Ddates <- reactive({
-      downy_dates <- viticolaR::get_PI_dates(downy_model())
+      downy_dates <- viticolR::get_PI_dates(downy_model())
 
       # arrange categories for plot
       downy_dates[, primary_infection_stage := factor(primary_infection_stage,
