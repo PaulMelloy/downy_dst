@@ -1,11 +1,11 @@
 ---
-title: "DownyDST"
+title: "Downy Mildew (*Plasmodium viticola*) decision support tool"
 author: "Paul Melloy"
 date: "`r Sys.Date()`"
 output: html_document
 ---
 
-```{r install_libraries}
+```{r install_libraries, message=FALSE, warning=FALSE, include=FALSE}
 packages <- c("remotes",
               "data.table",
               "ggplot2")
@@ -46,3 +46,38 @@ switch(Sys.info()["nodename"],
 DMod <- DMod_list[["23-24_NTamborine"]]
 ```
 
+This content is generated from local "Bureau of Meteorology" weather data and the
+R package `viticolR`. 
+A mechanistic compartment model to assist in fungicide decision support for 
+downy mildew (*Plasmodia viticola*) primary infections in grapevines.
+
+### Disclaimer:  
+This app is to be used as a guide in making more informed fungicide management 
+decisions. 
+Individual circumstances and conditions may vary, and local conditions should be 
+also considered when deciding on the appropriate fungicide application.  
+
+Always apply fungicide according to the label recommendations.  
+
+Model estimates primary inoculum dispersal only:  
+This model uses weather inputs to estimate the steps in primary inoculum 
+dispersal and therefore is influenced by the AWS accuracy. 
+The closer the weather station to the vineyard, the more accurate the 
+estimations. 
+By default missing rainfall observations are filled with '0'.  
+
+This model does not account for secondary infections. 
+If downy mildew is already present on the leaves, an alternate fungicide approach 
+should be considered as this decision support tool would be misleading once 
+downy mildew is established in the vineyard disease can develop rapidly. 
+Use of this model should be used to prevent primary leaf infections.  
+
+***  
+
+This model is translated and adapted from the published paper 
+'A mechanistic model simulating primary infections of downy mildew in grapevine' 
+authored by Vittorio Rossi, Tito Caffi, Simona Giosue and Riccardo Bugiani. 
+This paper was first published in *Ecological Modelling* in **2008**. 
+10.1016/j.ecolmodel.2007.10.046
+
+***  
